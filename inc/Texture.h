@@ -55,6 +55,7 @@ private:
         switch (kind) {
             case VIKING_ROOM:
                 return TEXTURE_PATH.c_str();
+            case TX_NULL:
             default:
                 return "/Users/sebastian/CLionProjects/soundscape/textures/texture.jpg";
         }

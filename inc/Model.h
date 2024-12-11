@@ -12,7 +12,21 @@
 
 class LoadModel {
 public:
-    explicit LoadModel(const char* obj_path) {
+    LoadModel() = default;
+    virtual  ~LoadModel() = default;
+
+    [[nodiscard]] std::vector<Vertex>* get_vertices() { return &m_vertices; }
+    [[nodiscard]] std::vector<uint32_t>* get_indices() { return &m_indices; }
+    // void set_vertices(std::pmr::vector<Vertex>& vertices) { return &m_vertices; }
+    // void set_indices(std::pmr::vector<Vertex>& vertices) { return &m_indices; }
+private:
+    std::vector<Vertex> m_vertices;
+    std::vector<uint32_t> m_indices;
+};
+
+class LoadObjModel : public LoadModel {
+public:
+    explicit LoadObjModel(const char* obj_path) {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
@@ -24,6 +38,8 @@ public:
 
         std::unordered_map<Vertex, uint32_t> unique_vertices{};
 
+        auto vertices = get_vertices();
+        auto indices = get_indices();
         for (const auto& shape : shapes) {
             for (const auto& index : shape.mesh.indices) {
                 Vertex vertex{};
@@ -43,30 +59,31 @@ public:
 
                 if (!unique_vertices.contains(vertex)) {
                     unique_vertices[vertex] = static_cast<uint32_t>(unique_vertices.size());
-                    m_vertices.push_back(vertex);
+                    vertices->push_back(vertex);
                 }
 
-                m_indices.push_back(unique_vertices[vertex]);
+                indices->push_back(unique_vertices[vertex]);
             }
         }
     }
-    ~LoadModel() = default;
+    ~LoadObjModel() = default;
 
-    [[nodiscard]] std::vector<Vertex>* get_vertices() { return &m_vertices; }
-    [[nodiscard]] std::vector<uint32_t>* get_indices() { return &m_indices; }
+    // [[nodiscard]] std::vector<Vertex>* get_vertices() { return &m_vertices; }
+    // [[nodiscard]] std::vector<uint32_t>* get_indices() { return &m_indices; }
 
 private:
-    std::vector<Vertex> m_vertices;
-    std::vector<uint32_t> m_indices;
+    // std::vector<Vertex> m_vertices;
+    // std::vector<uint32_t> m_indices;
 };
 
-class Model : public LoadModel {
+class Model : public LoadObjModel {
 public:
     enum Kind {
-        VIKING_ROOM = 0
+        VIKING_ROOM = 0,
+        BAR,
     };
 
-    explicit Model(const Kind kind) : LoadModel(get_obj_path(kind)) {
+    explicit Model(const Kind kind) : LoadObjModel(get_obj_path(kind)) {
         m_kind = kind;
     }
     ~Model() = default;
@@ -79,6 +96,8 @@ private:
         switch (kind) {
             case VIKING_ROOM:
                 return MODEL_PATH.c_str();
+            case BAR:
+                return "/Users/sebastian/CLionProjects/soundscape/models/bar.obj";
         }
         throw std::runtime_error("Unknown model kind");
     }

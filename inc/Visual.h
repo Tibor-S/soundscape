@@ -14,13 +14,16 @@
 // namespace Visual {
 
 enum SpriteKind {
-    VIKING_ROOM
+    VIKING_ROOM,
+    BAR_SPRITE
 };
 
 inline std::optional<Descriptor2::Kind> get_descriptor_kind(SpriteKind kind) {
     switch (kind) {
         case SpriteKind::VIKING_ROOM:
             return VikingRoom::descriptor_set_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::descriptor_set_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -28,6 +31,8 @@ inline std::optional<Pipeline2::Kind> get_pipeline_kind(SpriteKind kind) {
     switch (kind) {
         case SpriteKind::VIKING_ROOM:
             return VikingRoom::pipeline_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::pipeline_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -35,6 +40,8 @@ inline std::optional<Model::Kind> get_model_kind(SpriteKind kind) {
     switch (kind) {
         case SpriteKind::VIKING_ROOM:
             return VikingRoom::model_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::model_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -42,6 +49,8 @@ inline std::optional<Texture::Kind> get_texture_kind(SpriteKind kind) {
     switch (kind) {
         case SpriteKind::VIKING_ROOM:
             return VikingRoom::texture_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::texture_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -55,6 +64,9 @@ inline Sprite3* construct_sprite(std::shared_ptr<Device::Device> &device, Textur
     switch (kind) {
         case SpriteKind::VIKING_ROOM:
             return new VikingRoom(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+            descriptor_pool, image_count);
+        case SpriteKind::BAR_SPRITE:
+            return new BarSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
                                   descriptor_pool, image_count);
     }
     throw std::invalid_argument("Invalid sprite kind");

@@ -13,12 +13,12 @@ namespace VertexBuffer {
 VertexBuffer::VertexBuffer(Spec& spec) : DeviceParent(spec.device) {
     auto command_pool = spec.command_pool;
 
-    // std::vector<LoadModel*> models;
+    // std::vector<LoadObjModel*> models;
     // models.resize(models.size());
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     for (auto model_path : spec.models) {
-        auto model = new LoadModel(model_path);
+        auto model = new LoadObjModel(model_path);
 
         size_t vertex_offset = vertices.size();
         size_t index_offset = indices.size();

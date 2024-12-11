@@ -43,6 +43,8 @@ public:
         };
         sp2->set_buffer(m_vis->current_frame(), 1, &sp_mod2, sizeof(SpriteModel));
     }
+
+    void audio_bar();
 private:
     Visual* m_vis;
 };
@@ -56,12 +58,12 @@ int main() {
     auto vis = new Visual();
 
     std::map<const char*, SpriteKind> sprite_load = {};
-    sprite_load["main"] = VIKING_ROOM;
+    sprite_load["main"] = BAR_SPRITE;
     sprite_load["second"] = VIKING_ROOM;
     vis->load_sprites(sprite_load);
     auto sp = vis->get_sprite("main");
     SpriteModel data = {
-        .model_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f))
+        .model_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
     };
     sp->set_buffer(0, 1, &data, sizeof(SpriteModel));
     sp->set_buffer(1, 1, &data, sizeof(SpriteModel));

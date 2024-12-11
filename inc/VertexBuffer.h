@@ -122,7 +122,7 @@ public:
 
     [[nodiscard]] VkBuffer get_vertex_buffer() const { return m_vertex_buffer; }
     [[nodiscard]] VkBuffer get_index_buffer() const { return m_index_buffer; }
-    [[nodiscard]] ModelPosition get_model_position(Model::Kind kind) const { return m_position.at(kind); }
+    [[nodiscard]] ModelPosition get_model_position(Model::Kind kind) { return m_position[kind]; }
 private:
     std::shared_ptr<Device::Device> m_device;
 
