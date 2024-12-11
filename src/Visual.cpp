@@ -408,9 +408,10 @@ void Visual::record_render_buffer(VkCommandBuffer command_buffer, size_t index) 
         auto pipeline = m_pipeline_manager->acquire_pipeline(pipeline_kind.value());
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->get_handle());
 
+        auto vertex_position = sprite->get_vertex_position();
         auto vertex_buffer = sprite->get_vertex_buffer();
         VkBuffer vertexBuffers[] = {vertex_buffer->get_vertex_buffer()};
-        VkDeviceSize offsets[] = {0};
+        VkDeviceSize offsets[] = {vertex_position.vertex_offset};
         vkCmdBindVertexBuffers(command_buffer, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(command_buffer, vertex_buffer->get_index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -420,9 +421,8 @@ void Visual::record_render_buffer(VkCommandBuffer command_buffer, size_t index) 
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout->get_handle(), 0, 1,
                                 &descriptor_set, 0, nullptr);
 
-        auto vertex_position = sprite->get_vertex_position();
         vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(vertex_position.index_count), 1,
-                         vertex_position.index_offset, static_cast<int32_t>(vertex_position.vertex_offset), 0);
+                         vertex_position.index_offset, /* static_cast<int32_t>(vertex_position.vertex_offset)*/0, 0);
     }
 
     // auto vertex_buffer = m_sprite->get_vertex_buffer();

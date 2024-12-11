@@ -62,17 +62,18 @@ public:
 
     VertexBuffer2(const std::shared_ptr<Device::Device> &device, VkCommandPool command_pool,
                   const std::vector<Model*> &models) : m_device(device) {
-        std::vector<Vertex> vertices;
+        std::vector<char> vertices;
         std::vector<uint32_t> indices;
         for (const auto& model : models) {
+            auto loaded_model = model->get_loaded_model();
             m_position[model->get_kind()] = {
                 .vertex_offset = vertices.size(),
                 .index_offset = indices.size(),
-                .index_count = model->get_indices()->size(),
+                .index_count = loaded_model->get_indices()->size(),
             };
 
-            vertices.insert(vertices.end(), model->get_vertices()->begin(), model->get_vertices()->end());
-            indices.insert(indices.end(), model->get_indices()->begin(), model->get_indices()->end());
+            vertices.insert(vertices.end(), loaded_model->get_vertices()->begin(), loaded_model->get_vertices()->end());
+            indices.insert(indices.end(), loaded_model->get_indices()->begin(), loaded_model->get_indices()->end());
         }
 
         {

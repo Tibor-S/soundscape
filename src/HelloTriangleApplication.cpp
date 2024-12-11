@@ -139,13 +139,13 @@ void HelloTriangleApplication::initVulkan() {
     // --------------/
     // Vertex Buffer /
     // ---/----------/
-    {
-        VertexBuffer::Spec spec = {};
-        spec.device = m_device;
-        spec.command_pool = commandPool;
-        spec.models = {MODEL_PATH.c_str(), MODEL_PATH.c_str()};
-        m_vertex_buffer = new VertexBuffer::VertexBuffer(spec);
-    }
+    // {
+    //     VertexBuffer::Spec spec = {};
+    //     spec.device = m_device;
+    //     spec.command_pool = commandPool;
+    //     spec.models = {MODEL_PATH.c_str(), MODEL_PATH.c_str()};
+    //     m_vertex_buffer = new VertexBuffer::VertexBuffer(spec);
+    // }
     // ---/
 
     {

@@ -7,6 +7,7 @@
 #include <DescriptorManager.h>
 #include <SamplerImage.h>
 #include <UniformBuffer.h>
+#include <Vertex.h>
 
 
 class ModelDescriptor {
@@ -24,7 +25,8 @@ public:
     };
 
     enum Kind {
-        CAMERA_MODEL_SAMPLER
+        CAMERA_MODEL_SAMPLER,
+        CAMERA_MODEL_BUFFER
     };
 
     explicit Descriptor2(Kind kind) {
@@ -48,6 +50,28 @@ public:
         }
         throw std::runtime_error("Invalid binding type");
     }
+
+    [[nodiscard]] VkVertexInputBindingDescription get_binding_description() const {
+        switch (m_kind) {
+            case CAMERA_MODEL_SAMPLER:
+                return Vertex::get_binding_description();
+            case CAMERA_MODEL_BUFFER:
+                return BarVertex::get_binding_description();
+        }
+
+        throw std::runtime_error("Invalid kind");
+    }
+
+    [[nodiscard]] std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() const {
+        switch (m_kind) {
+            case CAMERA_MODEL_SAMPLER:
+                return Vertex::get_attribute_descriptions();
+            case CAMERA_MODEL_BUFFER:
+                return BarVertex::get_attribute_descriptions();
+        }
+
+        throw std::runtime_error("Invalid kind");
+    }
 private:
     Kind m_kind;
     std::vector<Binding> m_bindings;
@@ -62,7 +86,15 @@ private:
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_FRAGMENT_BIT,
                 };
-                return;
+            return;
+            case CAMERA_MODEL_BUFFER:
+                m_bindings = {CAMERA, MODEL, UNIFORM_BUFFER};
+                m_shader_stages = {
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                };
+            return;
         }
         throw std::invalid_argument("invalid kind");
     }

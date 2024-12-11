@@ -35,13 +35,16 @@ public:
         SpriteModel sp_mod =  {
             .model_matrix = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         };
+        BoneBuffer bone_mod = {};
+        bone_mod.bone[0] = glm::translate(glm::mat4(1.0f), (glm::sin(time) + 1) * glm::vec3(0.0f, 0.0f, 1.0f) / 2.0f);
+        bone_mod.bone[1] = glm::translate(glm::mat4(1.0f), (glm::sin(time) + 1) * glm::vec3(0.0f, 0.0f, -1.0f) / 2.0f);
         sp->set_buffer(m_vis->current_frame(), 1, &sp_mod, sizeof(SpriteModel));
-
-        auto sp2 = m_vis->get_sprite("second");
-        SpriteModel sp_mod2 =  {
-            .model_matrix = glm::translate(glm::mat4(1.0f), glm::sin(time) * glm::vec3(1.0f, 0.0f, 0.0f)),
-        };
-        sp2->set_buffer(m_vis->current_frame(), 1, &sp_mod2, sizeof(SpriteModel));
+        sp->set_buffer(m_vis->current_frame(), 2, &bone_mod, sizeof(BoneBuffer));
+        // auto sp2 = m_vis->get_sprite("second");
+        // SpriteModel sp_mod2 =  {
+        //     .model_matrix = glm::translate(glm::mat4(1.0f), glm::sin(time) * glm::vec3(1.0f, 0.0f, 0.0f)),
+        // };
+        // sp2->set_buffer(m_vis->current_frame(), 1, &sp_mod2, sizeof(SpriteModel));
     }
 
     void audio_bar();
@@ -65,13 +68,20 @@ int main() {
     SpriteModel data = {
         .model_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
     };
+    BoneBuffer data_bones {
+        .bone = {
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)),
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f))
+        }
+    };
     sp->set_buffer(0, 1, &data, sizeof(SpriteModel));
     sp->set_buffer(1, 1, &data, sizeof(SpriteModel));
+    sp->set_buffer(0, 2, &data_bones, sizeof(BoneBuffer));
+    sp->set_buffer(1, 2, &data_bones, sizeof(BoneBuffer));
 
     auto sp2 = vis->get_sprite("second");
     sp2->set_buffer(0, 1, &data, sizeof(SpriteModel));
     sp2->set_buffer(1, 1, &data, sizeof(SpriteModel));
-    // sp->set_buffer(2, 1, &data, sizeof(SpriteModel));
 
     Application app(vis);
 

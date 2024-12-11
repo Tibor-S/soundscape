@@ -6,7 +6,6 @@
 #define PIPELINE_H
 #include <PipelineLayout.h>
 #include <RenderTarget.h>
-#include <Vertex.h>
 
 namespace Pipeline {
 struct Spec {
@@ -53,7 +52,8 @@ std::vector<char> read_file(const std::string& filename);
 class Pipeline2 {
 public:
     enum Kind {
-        STANDARD
+        STANDARD,
+        BAR,
     };
 
     Pipeline2(std::shared_ptr<Device::Device> &device, std::shared_ptr<PipelineLayout2> &layout,
@@ -85,8 +85,8 @@ public:
         VkPipelineVertexInputStateCreateInfo vertex_input_info{};
         vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-        auto binding_description = Vertex::get_binding_description();
-        auto attribute_descriptions = Vertex::get_attribute_descriptions();
+        auto binding_description = layout->get_binding_description();
+        auto attribute_descriptions = layout->get_attribute_descriptions();
 
         vertex_input_info.vertexBindingDescriptionCount = 1;
         vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
@@ -188,6 +188,8 @@ public:
         switch (kind) {
             case STANDARD:
                 return PipelineLayout2::CAMERA_MODEL_SAMPLER;
+            case BAR:
+                return PipelineLayout2::CAMERA_MODEL_BUFFER;
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -203,6 +205,8 @@ private:
         switch (m_kind) {
             case Kind::STANDARD:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/vert.spv";
+            case BAR:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_vert.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -211,6 +215,8 @@ private:
         switch (m_kind) {
             case Kind::STANDARD:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/frag.spv";
+            case BAR:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_frag.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }

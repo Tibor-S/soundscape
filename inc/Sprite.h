@@ -386,14 +386,53 @@ public:
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::VIKING_ROOM; }
 };
 
-class BarSprite : public CameraModelSamplerSprite {
+
+struct BoneBuffer {
+    glm::mat4 bone[2];
+};
+
+
+class CameraModelBufferSprite : public Sprite3 {
+public:
+    CameraModelBufferSprite(Model::Kind model_kind, PipelineManager &pipeline_manager,
+                             std::shared_ptr<VertexBuffer2> &vertex_buffer,
+                             std::shared_ptr<DescriptorPool> &descriptor_pool,
+                             size_t image_count) : Sprite3(Pipeline2::BAR, model_kind, pipeline_manager, vertex_buffer, descriptor_pool,
+                                                           image_count)
+    {
+        set_buffer_bindings({0, 1, 2});
+        set_image_bindings({});
+        set_binding_buffer_kind({
+            UniformBufferManager::CAMERA, UniformBufferManager::LOCAL, UniformBufferManager::LOCAL
+        });
+        set_binding_buffer_size({sizeof(Camera::Data), sizeof(SpriteModel), sizeof(BoneBuffer)});
+        set_binding_image_kind({Texture::TX_NULL});
+        set_pipeline_kind(Pipeline2::BAR);
+        set_descriptor_set_kind(Descriptor2::CAMERA_MODEL_BUFFER);
+    }
+
+    [[nodiscard]] static std::optional<Pipeline2::Kind> pipeline_kind() { return Pipeline2::BAR; }
+    [[nodiscard]] static std::optional<Descriptor2::Kind> descriptor_set_kind() {
+        return Descriptor2::CAMERA_MODEL_BUFFER;
+    }
+
+    void set_sprite_model(SpriteModel& sprite_model, size_t image_index) const {
+        set_buffer(image_index, 1, &sprite_model, sizeof(SpriteModel));
+    }
+
+    void set_bone_model(BoneBuffer& bone_buffer, size_t image_index) const {
+        set_buffer(image_index, 2, &bone_buffer, sizeof(BoneBuffer));
+    }
+};
+
+class BarSprite : public CameraModelBufferSprite {
 public:
     BarSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,
                std::shared_ptr<DescriptorPool> &descriptor_pool,
-               size_t image_count) : CameraModelSamplerSprite(Model::BAR, pipeline_manager, vertex_buffer, descriptor_pool,
+               size_t image_count) : CameraModelBufferSprite(Model::BAR, pipeline_manager, vertex_buffer, descriptor_pool,
                                                               image_count)
     {
         set_binding_image_kind({Texture::TX_NULL});
