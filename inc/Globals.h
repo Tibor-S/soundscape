@@ -13,7 +13,7 @@ const std::string TEXTURE_PATH = "/Users/sebastian/CLionProjects/soundscape/text
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const std::vector<const char*> validationLayers = {
+const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
 };
 const std::vector<const char*> deviceExtensions = {
@@ -21,8 +21,8 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const bool enable_validation_layers = false;
 #else
-const bool enableValidationLayers = true;
+const bool enable_validation_layers = true;
 #endif
 #endif //GLOBALS_H

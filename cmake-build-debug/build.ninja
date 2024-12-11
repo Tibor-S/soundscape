@@ -56,6 +56,13 @@ build CMakeFiles/soundscape.dir/src/main.cpp.o: CXX_COMPILER__soundscape_unscann
   OBJECT_DIR = CMakeFiles/soundscape.dir
   OBJECT_FILE_DIR = CMakeFiles/soundscape.dir/src
 
+build CMakeFiles/soundscape.dir/src/Visual.cpp.o: CXX_COMPILER__soundscape_unscanned_Debug /Users/sebastian/CLionProjects/soundscape/src/Visual.cpp || cmake_object_order_depends_target_soundscape
+  DEP_FILE = CMakeFiles/soundscape.dir/src/Visual.cpp.o.d
+  FLAGS = -g -std=gnu++20 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk -fcolor-diagnostics
+  INCLUDES = -I/Users/sebastian/VulkanSDK/1.3.296.0/macOS/include -I/Users/sebastian/CLionProjects/soundscape/./include -I/Users/sebastian/CLionProjects/soundscape/./inc -isystem /opt/homebrew/include
+  OBJECT_DIR = CMakeFiles/soundscape.dir
+  OBJECT_FILE_DIR = CMakeFiles/soundscape.dir/src
+
 build CMakeFiles/soundscape.dir/src/HelloTriangleApplication.cpp.o: CXX_COMPILER__soundscape_unscanned_Debug /Users/sebastian/CLionProjects/soundscape/src/HelloTriangleApplication.cpp || cmake_object_order_depends_target_soundscape
   DEP_FILE = CMakeFiles/soundscape.dir/src/HelloTriangleApplication.cpp.o.d
   FLAGS = -g -std=gnu++20 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk -fcolor-diagnostics
@@ -211,7 +218,7 @@ build CMakeFiles/soundscape.dir/src/Format.cpp.o: CXX_COMPILER__soundscape_unsca
 #############################################
 # Link the executable soundscape
 
-build soundscape: CXX_EXECUTABLE_LINKER__soundscape_Debug CMakeFiles/soundscape.dir/src/main.cpp.o CMakeFiles/soundscape.dir/src/HelloTriangleApplication.cpp.o CMakeFiles/soundscape.dir/src/Device.cpp.o CMakeFiles/soundscape.dir/src/Image.cpp.o CMakeFiles/soundscape.dir/src/SamplerImage.cpp.o CMakeFiles/soundscape.dir/src/TextureImage.cpp.o CMakeFiles/soundscape.dir/src/SwapChain.cpp.o CMakeFiles/soundscape.dir/src/RenderPass.cpp.o CMakeFiles/soundscape.dir/src/Framebuffer.cpp.o CMakeFiles/soundscape.dir/src/RenderTarget.cpp.o CMakeFiles/soundscape.dir/src/PipelineLayout.cpp.o CMakeFiles/soundscape.dir/src/Pipeline.cpp.o CMakeFiles/soundscape.dir/src/Buffer.cpp.o CMakeFiles/soundscape.dir/src/UniformBuffer.cpp.o CMakeFiles/soundscape.dir/src/StagingBuffer.cpp.o CMakeFiles/soundscape.dir/src/VertexBuffer.cpp.o CMakeFiles/soundscape.dir/src/Sprite.cpp.o CMakeFiles/soundscape.dir/src/DescriptorManager.cpp.o CMakeFiles/soundscape.dir/src/Queue.cpp.o CMakeFiles/soundscape.dir/src/Memory.cpp.o CMakeFiles/soundscape.dir/src/Command.cpp.o CMakeFiles/soundscape.dir/src/Format.cpp.o | /opt/homebrew/lib/libglfw.3.4.dylib /opt/homebrew/lib/libvulkan.dylib
+build soundscape: CXX_EXECUTABLE_LINKER__soundscape_Debug CMakeFiles/soundscape.dir/src/main.cpp.o CMakeFiles/soundscape.dir/src/Visual.cpp.o CMakeFiles/soundscape.dir/src/HelloTriangleApplication.cpp.o CMakeFiles/soundscape.dir/src/Device.cpp.o CMakeFiles/soundscape.dir/src/Image.cpp.o CMakeFiles/soundscape.dir/src/SamplerImage.cpp.o CMakeFiles/soundscape.dir/src/TextureImage.cpp.o CMakeFiles/soundscape.dir/src/SwapChain.cpp.o CMakeFiles/soundscape.dir/src/RenderPass.cpp.o CMakeFiles/soundscape.dir/src/Framebuffer.cpp.o CMakeFiles/soundscape.dir/src/RenderTarget.cpp.o CMakeFiles/soundscape.dir/src/PipelineLayout.cpp.o CMakeFiles/soundscape.dir/src/Pipeline.cpp.o CMakeFiles/soundscape.dir/src/Buffer.cpp.o CMakeFiles/soundscape.dir/src/UniformBuffer.cpp.o CMakeFiles/soundscape.dir/src/StagingBuffer.cpp.o CMakeFiles/soundscape.dir/src/VertexBuffer.cpp.o CMakeFiles/soundscape.dir/src/Sprite.cpp.o CMakeFiles/soundscape.dir/src/DescriptorManager.cpp.o CMakeFiles/soundscape.dir/src/Queue.cpp.o CMakeFiles/soundscape.dir/src/Memory.cpp.o CMakeFiles/soundscape.dir/src/Command.cpp.o CMakeFiles/soundscape.dir/src/Format.cpp.o | /opt/homebrew/lib/libglfw.3.4.dylib /opt/homebrew/lib/libvulkan.dylib
   FLAGS = -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk
   LINK_LIBRARIES = -Wl,-rpath,/opt/homebrew/lib  /opt/homebrew/lib/libglfw.3.4.dylib  /opt/homebrew/lib/libvulkan.dylib
   OBJECT_DIR = CMakeFiles/soundscape.dir

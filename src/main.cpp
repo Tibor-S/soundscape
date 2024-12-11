@@ -10,6 +10,7 @@
 
 #include "HelloTriangleApplication.h"
 #include <cstdlib>
+#include <Visual.h>
 
 void printEnv(const char* var) {
     const char* value = std::getenv(var);
@@ -20,15 +21,60 @@ void printEnv(const char* var) {
     }
 }
 
+class Application : public InterFrame {
+public:
+    explicit Application(Visual* vis) : InterFrame(), m_vis(vis) {}
+    ~Application() override = default;
+
+    void inter_frame() override {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        auto sp = m_vis->get_sprite("main");
+        SpriteModel sp_mod =  {
+            .model_matrix = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        };
+        sp->set_buffer(m_vis->current_frame(), 1, &sp_mod, sizeof(SpriteModel));
+
+        auto sp2 = m_vis->get_sprite("second");
+        SpriteModel sp_mod2 =  {
+            .model_matrix = glm::translate(glm::mat4(1.0f), glm::sin(time) * glm::vec3(1.0f, 0.0f, 0.0f)),
+        };
+        sp2->set_buffer(m_vis->current_frame(), 1, &sp_mod2, sizeof(SpriteModel));
+    }
+private:
+    Visual* m_vis;
+};
+
 int main() {
     printEnv("VULKAN_SDK");
     printEnv("VK_ICD_FILENAMES");
     printEnv("VK_LAYER_PATH");
     printEnv("DYLD_LIBRARY_PATH");
-    auto app = new HelloTriangleApplication();
+    // auto app = new HelloTriangleApplication();
+    auto vis = new Visual();
+
+    std::map<const char*, SpriteKind> sprite_load = {};
+    sprite_load["main"] = VIKING_ROOM;
+    sprite_load["second"] = VIKING_ROOM;
+    vis->load_sprites(sprite_load);
+    auto sp = vis->get_sprite("main");
+    SpriteModel data = {
+        .model_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f))
+    };
+    sp->set_buffer(0, 1, &data, sizeof(SpriteModel));
+    sp->set_buffer(1, 1, &data, sizeof(SpriteModel));
+
+    auto sp2 = vis->get_sprite("second");
+    sp2->set_buffer(0, 1, &data, sizeof(SpriteModel));
+    sp2->set_buffer(1, 1, &data, sizeof(SpriteModel));
+    // sp->set_buffer(2, 1, &data, sizeof(SpriteModel));
+
+    Application app(vis);
 
     try {
-        app->run();
+        vis->run(&app);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

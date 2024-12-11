@@ -65,7 +65,8 @@ private:
     Pipeline::Pipeline* m_pipeline;
 
     // std::vector<UniformBuffer::UniformBuffer<UniformBufferObject>*> m_uniform_buffers;
-    Sprite::Sprite<UniformBufferObject>* m_sprite;
+    Sprite::Sprite* m_sprite;
+    Sprite::Sprite* m_sprite2;
 
     // Sync
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -74,8 +75,6 @@ private:
     bool framebufferResized = false;
 
     // old
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
     VertexBuffer::VertexBuffer* m_vertex_buffer;
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
@@ -117,7 +116,7 @@ private:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
-    void loadModel();
+    // void loadModel();
     void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     // VkSampleCountFlagBits getMaxUsableSampleCount();
 

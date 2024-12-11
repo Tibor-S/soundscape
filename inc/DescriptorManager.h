@@ -43,7 +43,6 @@ public:
     // void destroy() const;
 
 private:
-
     VkDescriptorPool m_descriptor_pool {};
     VkDescriptorSetLayout m_descriptor_set_layout {};
     std::vector<VkDescriptorSet> m_descriptor_sets;

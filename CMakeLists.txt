@@ -23,6 +23,8 @@ include_directories(./include)
 include_directories(./inc)
 
 set(SOURCE_FILES
+        src/Visual.cpp
+
         src/HelloTriangleApplication.cpp
         src/Device.cpp
         src/Image.cpp
@@ -51,6 +53,8 @@ set(SOURCE_FILES
 )
 
 set(HEADER_FILES
+        inc/Visual.h
+
         inc/HelloTriangleApplication.h
         inc/Device.h
         inc/Image.h
@@ -79,6 +83,9 @@ set(HEADER_FILES
         inc/Command.h
         inc/Format.h
         inc/Vertex.h
+        inc/Model.h
+        inc/Texture.h
+        inc/Descriptor.h
 
 )
 

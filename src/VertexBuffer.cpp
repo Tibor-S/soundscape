@@ -5,22 +5,41 @@
 #include "VertexBuffer.h"
 
 #include <Buffer.h>
+#include <Model.h>
 #include <StagingBuffer.h>
+#include <tiny_obj_loader.h>
 
 namespace VertexBuffer {
 VertexBuffer::VertexBuffer(Spec& spec) : DeviceParent(spec.device) {
     auto command_pool = spec.command_pool;
-    auto vertices = spec.vertices;
-    auto indices = spec.indices;
+
+    // std::vector<LoadModel*> models;
+    // models.resize(models.size());
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    for (auto model_path : spec.models) {
+        auto model = new LoadModel(model_path);
+
+        size_t vertex_offset = vertices.size();
+        size_t index_offset = indices.size();
+        vertices.insert(vertices.end(), model->get_vertices()->begin(), model->get_vertices()->end());
+        indices.insert(indices.end(), model->get_indices()->begin(), model->get_indices()->end());
+        m_vertex_offset.push_back(vertex_offset);
+        m_index_offset.push_back(index_offset);
+        m_index_count.push_back(model->get_indices()->size());
+
+        delete model;
+    }
+
     // --------------/
     // Vertex Buffer /
     // ---/----------/
     {
-        VkDeviceSize buffer_size = sizeof((*vertices)[0]) * vertices->size();
+        VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
 
         StagingBuffer::Spec staging_spec {};
         staging_spec.device = get_device();
-        staging_spec.data = vertices->data();
+        staging_spec.data = vertices.data();
         staging_spec.size = buffer_size;
         auto staging_buffer = new StagingBuffer::StagingBuffer(staging_spec);
 
@@ -36,11 +55,11 @@ VertexBuffer::VertexBuffer(Spec& spec) : DeviceParent(spec.device) {
     // Index Buffer /
     // ---/----------/
     {
-        VkDeviceSize buffer_size = sizeof((*indices)[0]) * indices->size();
+        VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
 
         StagingBuffer::Spec staging_spec {};
         staging_spec.device = get_device();
-        staging_spec.data = indices->data();
+        staging_spec.data = indices.data();
         staging_spec.size = buffer_size;
         auto staging_buffer = new StagingBuffer::StagingBuffer(staging_spec);
 
@@ -61,6 +80,5 @@ VertexBuffer::~VertexBuffer() {
     vkDestroyBuffer(device->logical_device_handle(), m_vertex_buffer, nullptr);
     vkFreeMemory(device->logical_device_handle(), m_vertex_memory, nullptr);
 }
-
 
 } // VertexBuffer

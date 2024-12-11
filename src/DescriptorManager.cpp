@@ -13,9 +13,9 @@ DescriptorManager::DescriptorManager(DescPoolSpec &spec, size_t max_sets) : Devi
     poolSizes.resize(spec.desc_bindings.size());
     for (size_t i = 0; i < spec.desc_bindings.size(); i++) {
         auto [type,
-            binding,
+            _b,
             count,
-            _] = spec.desc_bindings[i];
+            _s] = spec.desc_bindings[i];
 
         poolSizes[i].type = static_cast<VkDescriptorType>(type);
         poolSizes[i].descriptorCount = count * max_sets;

@@ -196,9 +196,9 @@ VkDevice Device::create_logical_device(VkPhysicalDevice physical_device, Queue::
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+    if (enable_validation_layers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+        createInfo.ppEnabledLayerNames = validation_layers.data();
     } else {
         createInfo.enabledLayerCount = 0;
     }

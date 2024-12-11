@@ -133,7 +133,7 @@ void HelloTriangleApplication::initVulkan() {
     };
     // ---/
 
-    loadModel();
+    // loadModel();
     // createVertexBuffer();
     // createIndexBuffer();
     // --------------/
@@ -143,8 +143,7 @@ void HelloTriangleApplication::initVulkan() {
         VertexBuffer::Spec spec = {};
         spec.device = m_device;
         spec.command_pool = commandPool;
-        spec.vertices = &vertices;
-        spec.indices = &indices;
+        spec.models = {MODEL_PATH.c_str(), MODEL_PATH.c_str()};
         m_vertex_buffer = new VertexBuffer::VertexBuffer(spec);
     }
     // ---/
@@ -155,7 +154,22 @@ void HelloTriangleApplication::initVulkan() {
         spec.texture_image = m_texture;
         spec.descriptor_manager = m_descriptor_manager;
         spec.uniform_buffer_count = MAX_FRAMES_IN_FLIGHT;
-        m_sprite = new Sprite::Sprite<UniformBufferObject>(spec);
+        spec.model_index = 0;
+        spec.pipeline = m_pipeline;
+        spec.size = sizeof(UniformBufferObject);
+        m_sprite = new Sprite::Sprite(spec);
+    }
+
+    {
+        Sprite::Spec spec = {};
+        spec.vertex_buffer = m_vertex_buffer;
+        spec.texture_image = m_texture;
+        spec.descriptor_manager = m_descriptor_manager;
+        spec.uniform_buffer_count = MAX_FRAMES_IN_FLIGHT;
+        spec.model_index = 1;
+        spec.pipeline = m_pipeline;
+        spec.size = sizeof(UniformBufferObject);
+        m_sprite2 = new Sprite::Sprite(spec);
     }
 
     createCommandBuffer();
@@ -176,10 +190,8 @@ void HelloTriangleApplication::cleanup() {
 
     delete m_texture;
 
-    // for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    //     delete m_uniform_buffers[i];
-    // }
     delete m_sprite;
+    delete m_sprite2;
     delete m_vertex_buffer;
 
     delete m_pipeline;
@@ -199,7 +211,7 @@ void HelloTriangleApplication::cleanup() {
     m_device->destroy();
     free(m_device);
 
-    if (enableValidationLayers) {
+    if (enable_validation_layers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
 
@@ -211,7 +223,7 @@ void HelloTriangleApplication::cleanup() {
 }
 
 void HelloTriangleApplication::createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    if (enable_validation_layers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -234,9 +246,9 @@ void HelloTriangleApplication::createInstance() {
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+    if (enable_validation_layers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+        createInfo.ppEnabledLayerNames = validation_layers.data();
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
@@ -365,20 +377,22 @@ void HelloTriangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer
     scissor.extent = m_render_target->get_swap_chain()->get_extent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    auto vertex_buffer = m_sprite->get_vertex_buffer();
-    // auto uniform_buffer = m_sprite->get_uniform_buffer(currentFrame);
-    VkBuffer vertexBuffers[] = {vertex_buffer->get_vertex_handle()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-    vkCmdBindIndexBuffer(commandBuffer, vertex_buffer->get_index_handle(), 0, VK_INDEX_TYPE_UINT32);
-
-    auto descriptor_index = m_sprite->get_descriptor(currentFrame);//m_descriptor_indices[currentFrame];
-    auto descriptor = m_descriptor_manager->descriptor_handle(descriptor_index);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_layout->get_handle(), 0, 1,
-                            &descriptor, 0, nullptr);
-
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    // auto vertex_buffer = m_sprite->get_vertex_buffer();
+    // // auto uniform_buffer = m_sprite->get_uniform_buffer(currentFrame);
+    // VkBuffer vertexBuffers[] = {vertex_buffer->get_vertex_handle()};
+    // VkDeviceSize offsets[] = {0};
+    // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    //
+    // vkCmdBindIndexBuffer(commandBuffer, vertex_buffer->get_index_handle(), 0, VK_INDEX_TYPE_UINT32);
+    //
+    // auto descriptor_index = m_sprite->get_descriptor(currentFrame);//m_descriptor_indices[currentFrame];
+    // auto descriptor = m_descriptor_manager->descriptor_handle(descriptor_index);
+    // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_layout->get_handle(), 0, 1,
+    //                         &descriptor, 0, nullptr);
+    //
+    // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_vertex_buffer->get_index_count(0)), 1, 0, 0, 0);
+    m_sprite->draw(commandBuffer, currentFrame);
+    m_sprite2->draw(commandBuffer, currentFrame);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -507,7 +521,7 @@ void HelloTriangleApplication::createSyncObjects() {
             vkCreateFence(m_device->logical_device_handle(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 
             throw std::runtime_error("failed to create synchronization objects for a frame!");
-            }
+        }
     }
 }
 
@@ -525,7 +539,11 @@ void HelloTriangleApplication::updateUniformBuffer(uint32_t currentImage) {
                                     m_render_target->get_swap_chain()->get_extent().height), 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
-    m_sprite->get_uniform_buffer(currentImage)->update(&ubo);
+    m_sprite->get_uniform_buffer(currentImage)->update(&ubo, sizeof(ubo));
+
+    auto pos = glm::vec3(-1.0f, -1.0f, -1.0f);
+    ubo.model = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 1.0f)), pos);
+    m_sprite2->get_uniform_buffer(currentImage)->update(&ubo, sizeof(ubo));
 }
 
 void HelloTriangleApplication::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
@@ -537,7 +555,7 @@ void HelloTriangleApplication::populateDebugMessengerCreateInfo(VkDebugUtilsMess
 }
 
 void HelloTriangleApplication::setupDebugMessenger() {
-    if (!enableValidationLayers) return;
+    if (!enable_validation_layers) return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -554,7 +572,7 @@ bool HelloTriangleApplication::checkValidationLayerSupport() {
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : validationLayers) {
+    for (const char* layerName : validation_layers) {
         bool layerFound = false;
 
         for (const auto& layerProperties : availableLayers) {
@@ -581,7 +599,7 @@ std::vector<const char*> HelloTriangleApplication::getRequiredExtensions() {
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (enableValidationLayers) {
+    if (enable_validation_layers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -614,45 +632,45 @@ VkFormat HelloTriangleApplication::findDepthFormat() {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 }
-
-void HelloTriangleApplication::loadModel() {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-        throw std::runtime_error(warn + err);
-    }
-
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-    for (const auto& shape : shapes) {
-        for (const auto& index : shape.mesh.indices) {
-            Vertex vertex{};
-
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
-
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            };
-
-            vertex.color = {1.0f, 1.0f, 1.0f};
-
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-
-            indices.push_back(uniqueVertices[vertex]);
-        }
-    }
-}
+//
+// void HelloTriangleApplication::loadModel() {
+//     tinyobj::attrib_t attrib;
+//     std::vector<tinyobj::shape_t> shapes;
+//     std::vector<tinyobj::material_t> materials;
+//     std::string warn, err;
+//
+//     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+//         throw std::runtime_error(warn + err);
+//     }
+//
+//     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+//
+//     for (const auto& shape : shapes) {
+//         for (const auto& index : shape.mesh.indices) {
+//             Vertex vertex{};
+//
+//             vertex.pos = {
+//                 attrib.vertices[3 * index.vertex_index + 0],
+//                 attrib.vertices[3 * index.vertex_index + 1],
+//                 attrib.vertices[3 * index.vertex_index + 2]
+//             };
+//
+//             vertex.texCoord = {
+//                 attrib.texcoords[2 * index.texcoord_index + 0],
+//                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+//             };
+//
+//             vertex.color = {1.0f, 1.0f, 1.0f};
+//
+//             if (uniqueVertices.count(vertex) == 0) {
+//                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+//                 vertices.push_back(vertex);
+//             }
+//
+//             indices.push_back(uniqueVertices[vertex]);
+//         }
+//     }
+// }
 
 void HelloTriangleApplication::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
         // Check if image format supports linear blitting
