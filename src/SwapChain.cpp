@@ -15,7 +15,7 @@ SwapChain::SwapChain(Spec& spec) : DeviceParent(spec.device) {
     m_extent = choose_swap_extent(swap_chain_support.capabilities, m_window);
     VkPresentModeKHR present_mode = choose_swap_present_mode(swap_chain_support.presentModes);
     m_swap_chain_handle = create_swap_chain(get_device(), spec.surface_handle, m_window, &swap_chain_support,
-                                    &m_surface_format, &m_extent, present_mode);
+                                    &m_surface_format, &m_extent, present_mode, spec.max_image_count);
     m_images = create_images(get_device()->logical_device_handle(), m_swap_chain_handle);
     m_image_views = create_image_views(get_device()->logical_device_handle(), m_images, m_surface_format.format);
     m_color_image = create_color_image(get_device(), m_surface_format, m_extent);
@@ -38,7 +38,7 @@ SwapChain::~SwapChain() {
 VkSwapchainKHR SwapChain::create_swap_chain(Device::Device *device, VkSurfaceKHR surface_handle, GLFWwindow *window,
                                            SwapChainSupport::SwapChainSupportDetails *swap_chain_support,
                                            VkSurfaceFormatKHR *surface_format, VkExtent2D *extent,
-                                           VkPresentModeKHR present_mode)
+                                           VkPresentModeKHR present_mode, size_t max_image_count)
 {
     uint32_t image_count = swap_chain_support->capabilities.minImageCount + 1;
     if (swap_chain_support->capabilities.maxImageCount > 0 &&
@@ -46,6 +46,7 @@ VkSwapchainKHR SwapChain::create_swap_chain(Device::Device *device, VkSurfaceKHR
     {
         image_count = swap_chain_support->capabilities.maxImageCount;
     }
+    image_count = std::min(image_count, static_cast<uint32_t>(max_image_count));
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

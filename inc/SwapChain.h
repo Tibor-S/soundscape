@@ -16,6 +16,7 @@ struct Spec {
     Device::Device* device;
     GLFWwindow* window;
     VkSurfaceKHR surface_handle;
+    size_t max_image_count;
 };
 
 
@@ -48,7 +49,7 @@ private:
     static VkSwapchainKHR create_swap_chain(Device::Device *device, VkSurfaceKHR surface_handle, GLFWwindow *window,
                                            SwapChainSupport::SwapChainSupportDetails *swap_chain_support,
                                            VkSurfaceFormatKHR *surface_format, VkExtent2D *extent,
-                                           VkPresentModeKHR present_mode);
+                                           VkPresentModeKHR present_mode, size_t max_image_count);
     static std::vector<VkImage> create_images(VkDevice device_handle, VkSwapchainKHR swap_chain_handle);
     static std::vector<VkImageView> create_image_views(VkDevice device_handle, std::vector<VkImage> &images,
                                                        VkFormat format);

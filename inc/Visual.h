@@ -82,9 +82,9 @@ public:
 
 class Visual {
 public:
-    Visual();
+    Visual(size_t max_frames_in_flight);
     ~Visual() {
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < m_max_frames_in_flight; i++) {
             vkDestroySemaphore(m_device->logical_device_handle(), m_render_finished_semaphores[i], nullptr);
             vkDestroySemaphore(m_device->logical_device_handle(), m_image_available_semaphores[i], nullptr);
             vkDestroyFence(m_device->logical_device_handle(), m_in_flight_fences[i], nullptr);
@@ -116,9 +116,12 @@ public:
 
     void load_sprites(std::map<const char*, SpriteKind> &sprites);
 
+    [[nodiscard]] size_t get_image_count() const { return m_max_frames_in_flight; }
     [[nodiscard]] size_t current_frame() const { return m_current_frame; }
     [[nodiscard]] Sprite3* get_sprite(const char* sprite_name) { return m_sprites[sprite_name]; }
+    [[nodiscard]] std::shared_ptr<Camera> get_camera() const { return m_uniform_buffer_manager->acquire_camera(); }
 private:
+    size_t m_max_frames_in_flight;
     GLFWwindow* m_window;
     bool m_window_resized = false;
     bool m_framebuffer_resized = false;

@@ -11,7 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
-Visual::Visual() {
+Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_in_flight) {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -92,7 +92,7 @@ Visual::Visual() {
     // Render Target
     {
         RenderTarget::Spec spec {};
-        spec.max_image_count = MAX_FRAMES_IN_FLIGHT + 1;
+        spec.max_image_count = m_max_frames_in_flight + 1;
         spec.device = m_device.get();
         spec.surface_handle = m_surface;
         spec.window = m_window;
@@ -113,7 +113,7 @@ Visual::Visual() {
 
     // Render Buffer
     {
-        m_render_buffers.resize(MAX_FRAMES_IN_FLIGHT);
+        m_render_buffers.resize(m_max_frames_in_flight);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -130,9 +130,9 @@ Visual::Visual() {
 
     // Sync Objects
     {
-        m_image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+        m_image_available_semaphores.resize(m_max_frames_in_flight);
+        m_render_finished_semaphores.resize(m_max_frames_in_flight);
+        m_in_flight_fences.resize(m_max_frames_in_flight);
 
         VkSemaphoreCreateInfo semaphore_info{};
         semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -141,7 +141,7 @@ Visual::Visual() {
         fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < m_max_frames_in_flight; i++) {
             if (vkCreateSemaphore(m_device->logical_device_handle(), &semaphore_info, nullptr,
                                  &m_image_available_semaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(m_device->logical_device_handle(), &semaphore_info, nullptr,
@@ -168,7 +168,7 @@ Visual::Visual() {
     auto camera = m_uniform_buffer_manager->acquire_camera();
     const auto width = static_cast<float>(m_render_target->get_swap_chain()->get_extent().width);
     const auto height = static_cast<float>(m_render_target->get_swap_chain()->get_extent().height);
-    auto proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 10.0f);
+    auto proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 100.0f);
     proj[1][1] *= -1;
     camera->set_data({
         .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
@@ -209,9 +209,9 @@ void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
         // }
         // auto descriptor_layout = m_descriptor_layout[descriptor_kind];
         if (!descriptor_count.contains(descriptor_kind)) {
-            descriptor_count[descriptor_kind] = MAX_FRAMES_IN_FLIGHT;
+            descriptor_count[descriptor_kind] = m_max_frames_in_flight;
         } else {
-            descriptor_count[descriptor_kind] += MAX_FRAMES_IN_FLIGHT;
+            descriptor_count[descriptor_kind] += m_max_frames_in_flight;
         }
 
         // Pipeline
@@ -277,9 +277,9 @@ void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
 
 
         auto sprite = construct_sprite(m_device, *m_texture_manager, *m_pipeline_manager, *m_uniform_buffer_manager,
-                                       vertex_buffer, pool, MAX_FRAMES_IN_FLIGHT, kind);
-        // auto sprite = new Sprite2(vertex_buffer, texture, pipeline, pool, kind, MAX_FRAMES_IN_FLIGHT);
-        // for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+                                       vertex_buffer, pool, m_max_frames_in_flight, kind);
+        // auto sprite = new Sprite2(vertex_buffer, texture, pipeline, pool, kind, m_max_frames_in_flight);
+        // for (size_t i = 0; i < m_max_frames_in_flight; i++) {
         //     auto upd = sprite->get_descriptor_set_updater(i);
         //     // upd->update_buffer(0, *m_camera);
         //
@@ -356,7 +356,7 @@ void Visual::draw_frame() {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    m_current_frame = (m_current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+    m_current_frame = (m_current_frame + 1) % m_max_frames_in_flight;
 }
 
 void Visual::record_render_buffer(VkCommandBuffer command_buffer, size_t index) {

@@ -11,12 +11,12 @@
 namespace RenderTarget {
 
 struct Spec : SwapChain::Spec {
-    size_t max_image_count;
+    // size_t max_image_count;
 };
 
 class RenderTarget : public Device::DeviceParent {
 public:
-    RenderTarget(Spec& spec);
+    explicit RenderTarget(Spec& spec);
     ~RenderTarget();
     void recreate_swap_chain();
     // void destroy();
