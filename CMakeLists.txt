@@ -16,11 +16,14 @@ find_package(glfw3 3.4 REQUIRED)
 #find_package(glm REQUIRED)
 find_package(Vulkan REQUIRED)
 #find_package(Vulkan REQUIRED)
+#find_package(portaudio REQUIRED)
 
 # Include directories (if needed for custom libraries)
 include_directories(${VULKAN_SDK}/include)
 include_directories(./include)
 include_directories(./inc)
+
+
 
 set(SOURCE_FILES
         src/Visual.cpp
@@ -50,6 +53,7 @@ set(SOURCE_FILES
         src/Memory.cpp
         src/Command.cpp
         src/Format.cpp
+        src/AudioRecord.cpp
 )
 
 set(HEADER_FILES
@@ -86,7 +90,7 @@ set(HEADER_FILES
         inc/Model.h
         inc/Texture.h
         inc/Descriptor.h
-
+        inc/AudioRecord.h
 )
 
 # Add executable
@@ -95,15 +99,33 @@ add_executable(soundscape src/main.cpp
         ${HEADER_FILES}
 )
 
+add_library(portaudio STATIC IMPORTED)
+set_target_properties(portaudio PROPERTIES IMPORTED_LOCATION /Users/sebastian/CLionProjects/soundscape/lib/portaudio/libportaudio.a)
+
 # Link libraries
 target_link_libraries(soundscape PRIVATE
 #        glm
         glfw
         Vulkan::Vulkan
+        portaudio
 )
+
+if(APPLE)
+    target_link_libraries(soundscape PRIVATE
+#            "-framework Foundation"
+#            "-framework IOKit"
+            "-framework CoreServices"
+            "-framework CoreFoundation"
+            "-framework AudioUnit"
+            "-framework AudioToolbox"
+            "-framework CoreAudio"
+    )
+endif()
+
 
 # Include directories (specific to this project)
 target_include_directories(soundscape PRIVATE
         ${VULKAN_SDK}/include
         ./include
+        ${FFTW3_DIR}/api
 )
