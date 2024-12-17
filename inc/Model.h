@@ -129,10 +129,10 @@ public:
                 auto v_left = 2 * M_PI * float_j_left / float_lon_res;
                 auto v_right = 2 * M_PI * float_j_right / float_lon_res;
 
-                auto color1 = glm::vec3(1.0, 1.0, 0.0);//glm::vec3((glm::sin(u_top_deg) + 1) / 2, (glm::cos(v_left) + 1) / 2, 0.0f);
-                auto color2 = glm::vec3(1.0, 1.0, 0.0);//glm::vec3((glm::sin(u_top_deg) + 1) / 2, (glm::cos(v_right) + 1) / 2, 0.0f);
-                auto color3 = glm::vec3(1.0, 1.0, 0.0);//glm::vec3((glm::sin(u_bot_deg) + 1) / 2, (glm::cos(v_left) + 1) / 2, 0.0f);
-                auto color4 = glm::vec3(1.0, 1.0, 0.0);//glm::vec3((glm::sin(u_bot_deg) + 1) / 2, (glm::cos(v_right) + 1) / 2, 0.0f);
+                auto color1 = glm::vec3(1.0, 1.0, 0.0);
+                auto color2 = glm::vec3(1.0, 1.0, 0.0);
+                auto color3 = glm::vec3(1.0, 1.0, 0.0);
+                auto color4 = glm::vec3(1.0, 1.0, 0.0);
 
                 auto x_top_left = horizontal_radius_top * glm::cos(v_left);
                 auto y_top_left = horizontal_radius_top * glm::sin(v_left);
@@ -216,70 +216,73 @@ public:
             vertices[i].normal = normalize(normals[i]);
             append_vertex(vertices[i]);
         }
+    }
+};
 
-        // for (size_t i = 0; i < lon_res; i++) {
-        //     auto deg1 = 360 * static_cast<float>(i) / static_cast<float>(lon_res);
-        //     auto deg2 = 360 * static_cast<float>(i + 1) / static_cast<float>(lon_res);
-        //     auto ang1 = glm::radians(deg1);
-        //     auto ang2 = glm::radians(deg2);
+class LoadBackDropModel : public LoadModel {
+public:
+    LoadBackDropModel() : LoadModel(sizeof(BarVertex)) {
+        std::map<size_t, glm::vec3> normals;
+
+        auto color = glm::vec3(1.0f, 0.0f, 0.0f);
+        auto b_index = 0;
+        std::vector<glm::vec3> positions = {
+            glm::vec3(-1.0f, -1.0f, 1.0f),
+            glm::vec3(1.0f, -1.0f, 1.0f),
+            glm::vec3(-1.0f, -1.0f, 0.1f),
+            glm::vec3(1.0f, -1.0f, 0.1f),
+            glm::vec3(-1.0f, -1.0f, -1.0f),
+            glm::vec3(1.0f, -1.0f, -1.0f),
+            glm::vec3(-1.0f, 0.1f, -1.0f),
+            glm::vec3(1.0f, 0.1f, -1.0f),
+            glm::vec3(-1.0f, 1.0f, -1.0f),
+            glm::vec3(1.0f, 1.0f, -1.0f),
+        };
+        std::vector<BarVertex> vertices(positions.size());
+
+        for (size_t i = 0; i < positions.size(); i++) {
+            normals[i] = glm::vec3(0.0f, 0.0f, 0.0f);
+            vertices[i] = BarVertex {
+                .pos = positions[i],
+                .color = color,
+                .b_index = b_index,
+                .normal = glm::vec3(0.0f, 0.0f, 0.0f),
+            };
+        }
+
+        for (size_t i = 0; i < vertices.size(); i += 2) {
+            append_index(i);
+            append_index(i+3);
+            append_index(i+2);
+
+            append_index(i);
+            append_index(i+1);
+            append_index(i+3);
+        }
+        // append_index(0);
+        // append_index(3);
+        // append_index(2);
         //
-        //     auto v1 = BarVertex {
-        //         .pos = glm::vec3(glm::cos(ang1), sin(ang1), z_offset),
-        //         .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        //         .b_index = 0
-        //     };
-        //     auto v2 = BarVertex {
-        //         .pos = glm::vec3(glm::cos(ang2), sin(ang2), z_offset),
-        //         .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        //         .b_index = 0
-        //     };
-        //     auto v3 = BarVertex {
-        //         .pos = glm::vec3(glm::cos(ang1), sin(ang1), -z_offset),
-        //         .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        //         .b_index = 1
-        //     };
-        //     auto v4 = BarVertex {
-        //         .pos = glm::vec3(glm::cos(ang2), sin(ang2), -z_offset),
-        //         .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        //         .b_index = 1
-        //     };
+        // append_index(0);
+        // append_index(1);
+        // append_index(3);
         //
-        //     if (!unique_vertices.contains(v1)) {
-        //         unique_vertices[v1] = static_cast<uint32_t>(unique_vertices.size());
-        //         append_vertex(v1);
-        //     }
-        //     if (!unique_vertices.contains(v2)) {
-        //         unique_vertices[v2] = static_cast<uint32_t>(unique_vertices.size());
-        //         append_vertex(v2);
-        //     }
-        //     if (!unique_vertices.contains(v3)) {
-        //         unique_vertices[v3] = static_cast<uint32_t>(unique_vertices.size());
-        //         append_vertex(v3);
-        //     }
-        //     if (!unique_vertices.contains(v4)) {
-        //         unique_vertices[v4] = static_cast<uint32_t>(unique_vertices.size());
-        //         append_vertex(v4);
-        //     }
+        // append_index(2);
+        // append_index(5);
+        // append_index(4);
         //
-        //     // Top circle
-        //     append_index(unique_vertices[top_vertex]);
-        //     append_index(unique_vertices[v1]);
-        //     append_index(unique_vertices[v2]);
-        //
-        //     // Bot circle
-        //     append_index(unique_vertices[bot_vertex]);
-        //     append_index(unique_vertices[v4]);
-        //     append_index(unique_vertices[v3]);
-        //
-        //     // Bridge
-        //     append_index(unique_vertices[v2]);
-        //     append_index(unique_vertices[v1]);
-        //     append_index(unique_vertices[v3]);
-        //
-        //     append_index(unique_vertices[v3]);
-        //     append_index(unique_vertices[v4]);
-        //     append_index(unique_vertices[v2]);
-        // }
+        // append_index(2);
+        // append_index(3);
+        // append_index(5);
+
+        normals[0] = normals[1] = normals[2] = normals[3] = glm::vec3(0.0, 1.0, 0.0);
+        normals[6] = normals[7] = normals[8] = normals[9] = glm::vec3(0.0, 0.0, 1.0);
+        normals[4] = normals[5] = glm::vec3(0.0, 1.0, 1.0);
+
+        for (size_t i = 0; i < vertices.size(); i++) {
+            vertices[i].normal = normalize(normals[i]);
+            append_vertex(vertices[i]);
+        }
     }
 };
 
@@ -288,6 +291,7 @@ public:
     enum Kind {
         VIKING_ROOM = 0,
         BAR,
+        BACK_DROP
     };
 
     explicit Model(const Kind kind) : m_loaded_model(load_model(kind)) {
@@ -319,6 +323,8 @@ private:
                 return new LoadObjModel(get_obj_path(kind));
             case BAR:
                 return new LoadBarModel(1, 1, 24, 24);
+            case BACK_DROP:
+                return new LoadBackDropModel();
         }
         throw std::runtime_error("Unknown model kind");
     }

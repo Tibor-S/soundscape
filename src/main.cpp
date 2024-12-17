@@ -57,6 +57,7 @@ public:
         for (size_t i = 0; i < m_bar_count; i++) {
             sprite_load[BAR_NAMES[i]] = BAR_SPRITE;
         }
+        sprite_load["back_drop"] = BACK_DROP_SPRITE;
         m_vis->load_sprites(sprite_load);
         auto initial_bone_buffer = BoneBuffer {
             .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
@@ -76,6 +77,18 @@ public:
                 sp->set_buffer(j, 2, &initial_bone_buffer, sizeof(BoneBuffer));
             }
         }
+
+        const auto sp = m_vis->get_sprite("back_drop");
+        auto model = SpriteModel {
+            .model_matrix = scale(translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 10.0f)), glm::vec3(30.0f, 20.0f, 20.0f))
+        };
+        auto bone = BoneBuffer {
+            .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
+        };
+        for (size_t j = 0; j < m_image_count; j++) {
+            sp->set_buffer(j, 1, &model, sizeof(SpriteModel));
+            sp->set_buffer(j, 2, &bone, sizeof(BoneBuffer));
+        }
     }
 
     void inter_frame() override {
@@ -94,12 +107,11 @@ public:
         float max_amp = 4.0f;
         for (size_t bin = 0; bin < bin_count; bin++) {
             float avg_amp = 0.0f;
-            float maxx_amp = 0.0f;
             for (size_t i = 0; i < frequencies_per_bin; i++)
                 avg_amp += current_frequencies[bin * frequencies_per_bin + i + first_frequency];
             amps[bin] = avg_amp / static_cast<float>(frequencies_per_bin);
             if (bin == 0) {
-                amps[bin] / 2.0f;
+                amps[bin] /= 2.0f;
             }
             if (amps[bin] > max_amp) {
                 amps[bin] = max_amp;
@@ -122,7 +134,7 @@ public:
 
         // auto camera = m_vis->get_camera();
         // auto data = camera->get_data();
-        // data.view = glm::lookAt(glm::vec3(0.0f, 20 * glm::cos(2 * M_PI * m_frame / 1000), 20.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+        // data.view = glm::lookAt(glm::vec3(20 * glm::cos(2 * M_PI * m_frame / 1000), 20 * glm::sin(2 * M_PI * m_frame / 1000), 20.0f), glm::vec3(0.0f, 0.0f, 0.0f),
         //                            glm::vec3(0.0f, 0.0f, 1.0f));
         // camera->set_data(data);
 
@@ -139,8 +151,8 @@ private:
     float m_bar_diameter;
     std::vector<float> m_bone_displacement;
     size_t m_frame = 0;
-    size_t m_bar_count = 32;
-    float m_bars_width = 16;
+    size_t m_bar_count = 16;
+    float m_bars_width = 20;
     float m_bar_margin = 0.2;
 
     AudioRecord* m_audio_record;
@@ -281,173 +293,6 @@ void done(PaError err) {
     }
 }
 int main() {
-    // {
-    //     std::vector<float> data(8);
-    //
-    //     for (int i = 0; i < data.size(); i++) {
-    //         data[i] = static_cast<float>(glm::sin(2 * M_PI * static_cast<float>(i) / 8));
-    //     }
-    //
-    //     std::vector<float> real(8);
-    //     std::vector<float> imag(8);
-    //     std::vector<float> out(8);
-    //
-    //     for (size_t k = 0; k < data.size(); k++) {
-    //         for (size_t n = 0; n < data.size(); n++) {
-    //             auto exp_real = glm::cos(- 2 * M_PI * (float)k * n / (float)data.size());
-    //             auto exp_imag = glm::sin(- 2 * M_PI * (float)k * n / (float)data.size());
-    //
-    //             real[k] += data[n] * exp_real;
-    //             imag[k] += data[n] * exp_imag;
-    //         }
-    //         out[k] = glm::length(glm::vec2(real[k], imag[k]));
-    //     }
-    //
-    //
-    //     using namespace std;
-    //     cout << "out: {" << endl;
-    //     for (const auto o : out) {
-    //         cout << "\t" << o << endl;
-    //     }
-    //     cout << "}" << endl;
-    // }
-
-    // auto audio_record = new AudioRecord(32768);
-    // if (!audio_record->is_alive()) {
-    //     delete audio_record;
-    //     return 1;
-    // }
-    //
-    // if (!audio_record->start_recording()) {
-    //     delete audio_record;
-    //     return 1;
-    // }
-    //
-    // // AudioRecord::sleep(5000);
-    // std::cout << "Starting recording..." << std::endl;
-    // Pa_Sleep(5000);
-    // std::cout << "Stopping recording..." << std::endl;
-    //
-    // if (!audio_record->stop_recording()) {
-    //     delete audio_record;
-    //     return 1;
-    // }
-    //
-    // const auto recorded_data = audio_record->recorded_data();
-    // float max_val = 0;
-    // for (int i = 0; i < recorded_data.size(); i++) {
-    //     // std::cout << "index " << i << ": " << recorded_data[i] << std::endl;
-    //     if (recorded_data[i] > max_val) {
-    //         max_val = recorded_data[i];
-    //     }
-    // }
-    // std::cout << "max val: " <<  max_val << std::endl;
-    //
-    //
-    //
-    // return 0;
-    // PaStreamParameters  inputParameters,
-    //                     outputParameters;
-    // PaStream*           stream;
-    // PaError             err = paNoError;
-    // paTestData          data;
-    // int                 i;
-    // int                 totalFrames;
-    // int                 numSamples;
-    // int                 numBytes;
-    // SAMPLE              max, val;
-    // double              average;
-    //
-    // printf("patest_record.c\n"); fflush(stdout);
-    //
-    // data.maxFrameIndex = totalFrames = NUM_SECONDS * SAMPLE_RATE; /* Record for a few seconds. */
-    // data.frameIndex = 0;
-    // numSamples = totalFrames * NUM_CHANNELS;
-    // numBytes = numSamples * sizeof(SAMPLE);
-    // data.recordedSamples = (SAMPLE *) malloc( numBytes ); /* From now on, recordedSamples is initialised. */
-    // if( data.recordedSamples == NULL )
-    // {
-    //     printf("Could not allocate record array.\n");
-    //     done(err);
-    //     return 0;
-    // }
-    // for( i=0; i<numSamples; i++ ) data.recordedSamples[i] = 0;
-    //
-    // err = Pa_Initialize();
-    // if( err != paNoError ) {
-    //     done(err);
-    //     return 0;
-    // }
-    //
-    // inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
-    // if (inputParameters.device == paNoDevice) {
-    //     fprintf(stderr,"Error: No default input device.\n");
-    //     done(err);
-    //     return 0;
-    // }
-    // inputParameters.channelCount = NUM_CHANNELS;
-    // inputParameters.sampleFormat = PA_SAMPLE_TYPE;
-    // inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
-    // inputParameters.hostApiSpecificStreamInfo = NULL;
-    //
-    // /* Record some audio. -------------------------------------------- */
-    // err = Pa_OpenStream(
-    //           &stream,
-    //           &inputParameters,
-    //           NULL,                  /* &outputParameters, */
-    //           SAMPLE_RATE,
-    //           FRAMES_PER_BUFFER,
-    //           paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-    //           recordCallback,
-    //           &data );
-    // if( err != paNoError ) {
-    //     done(err);
-    //     return 0;
-    // }
-    //
-    // err = Pa_StartStream( stream );
-    // if( err != paNoError ) {
-    //     done(err);
-    //     return 0;
-    // }
-    // printf("\n=== Now recording!! Please speak into the microphone. ===\n"); fflush(stdout);
-    //
-    // while( ( err = Pa_IsStreamActive( stream ) ) == 1 )
-    // {
-    //     Pa_Sleep(1000);
-    //     printf("index = %d\n", data.frameIndex ); fflush(stdout);
-    // }
-    // if( err < 0 ) {
-    //     done(err);
-    //     return 0;
-    // }
-    //
-    // err = Pa_CloseStream( stream );
-    // if( err != paNoError ) {
-    //     done(err);
-    //     return 0;
-    // }
-    //
-    // /* Measure maximum peak amplitude. */
-    // max = 0;
-    // average = 0.0;
-    // for( i=0; i<numSamples; i++ )
-    // {
-    //     val = data.recordedSamples[i];
-    //     if( val < 0 ) val = -val; /* ABS */
-    //     if( val > max )
-    //     {
-    //         max = val;
-    //     }
-    //     average += val;
-    // }
-    //
-    // average = average / (double)numSamples;
-    //
-    // std::cout << "sample max amplitude = " << max << std::endl;
-    // printf("sample average = %lf\n", average );
-    //
-    // return 0;
     printEnv("VULKAN_SDK");
     printEnv("VK_ICD_FILENAMES");
     printEnv("VK_LAYER_PATH");

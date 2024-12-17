@@ -21,11 +21,15 @@ layout(location = 3) in int boneIndex;
 
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec3 fragNormal;
-layout(location = 2) out vec3 fragView;
+layout(location = 2) out vec3 fragPos;
+layout(location = 3) out vec3 viewDir;
 
 void main() {
-    gl_Position = ubo.proj * ubo.view * bon.bone[boneIndex] * pos.model * vec4(inPosition, 1.0);
+    vec4 pos = ubo.proj * ubo.view * bon.bone[boneIndex] * pos.model * vec4(inPosition, 1.0);
+    gl_Position = pos;
     fragColor = inColor;
     fragNormal = inNormal;
-    fragView = normalize(ubo.view[3].xyz - gl_Position.xyz);
+    fragPos = pos.xyz;
+    viewDir = vec3(ubo.view[0][2], ubo.view[1][2], ubo.view[2][2]);
+
 }

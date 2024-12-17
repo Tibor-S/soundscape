@@ -445,4 +445,24 @@ public:
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
 };
 
+class BackDropSprite : public CameraModelBufferSprite {
+public:
+    BackDropSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+               PipelineManager &pipeline_manager,
+               UniformBufferManager &uniform_buffer_manager,
+               std::shared_ptr<VertexBuffer2> &vertex_buffer,
+               std::shared_ptr<DescriptorPool> &descriptor_pool,
+               size_t image_count) : CameraModelBufferSprite(Model::BACK_DROP, pipeline_manager, vertex_buffer, descriptor_pool,
+                                                              image_count)
+    {
+        set_binding_image_kind({Texture::TX_NULL});
+        set_model_kind(Model::BACK_DROP);
+        set_texture_kind(Texture::TX_NULL);
+        set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
+    }
+
+    [[nodiscard]] static std::optional<Model::Kind> model_kind() { return Model::BACK_DROP; }
+    [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
+};
+
 #endif //SPRITE_H
