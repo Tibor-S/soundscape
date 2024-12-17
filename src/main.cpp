@@ -33,6 +33,10 @@ public:
 
         m_last_frame = std::chrono::steady_clock::now();
 
+
+        const float bar_total_width = m_bars_width - m_bar_margin * (static_cast<float>(m_bar_count) - 1);
+        m_bar_diameter = bar_total_width / static_cast<float>(m_bar_count);
+        m_scale_factor = 1 / (m_bar_diameter / 2.0f);
     }
     ~Application() override {
         delete m_audio_record;
@@ -45,9 +49,9 @@ public:
     }
 
     void load_bars() const {
-        const float bar_total_width = m_bars_width - m_bar_margin * (static_cast<float>(m_bar_count) - 1);
-        const float bar_diameter = bar_total_width / static_cast<float>(m_bar_count);
-        const float bar_scale_factor = bar_diameter / 2.0f;
+        // const float bar_total_width = m_bars_width - m_bar_margin * (static_cast<float>(m_bar_count) - 1);
+        // const float bar_diameter = bar_total_width / static_cast<float>(m_bar_count);
+        // const float bar_scale_factor = bar_diameter / 2.0f;
 
         std::map<const char*, SpriteKind> sprite_load = {};
         for (size_t i = 0; i < m_bar_count; i++) {
@@ -58,14 +62,14 @@ public:
             .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
         };
 
-        const float low = (- m_bars_width + bar_diameter) / 2.0f;
+        const float low = (- m_bars_width + m_bar_diameter) / 2.0f;
         for (int i = 0; i < m_bar_count; i++) {
             const auto sp = m_vis->get_sprite(BAR_NAMES[i]);
             SpriteModel data = {
                 .model_matrix = scale(
                     translate(glm::mat4(1.0f),
-                              glm::vec3(low + static_cast<float>(i) * (bar_diameter + m_bar_margin), 0.0f, 0.0f)),
-                    glm::vec3(bar_scale_factor, bar_scale_factor, 1.0f)),
+                              glm::vec3(low + static_cast<float>(i) * (m_bar_diameter + m_bar_margin), 0.0f, 0.0f)),
+                    glm::vec3(1 / m_scale_factor, 1 / m_scale_factor, 1 / m_scale_factor)),
             };
             for (size_t j = 0; j < m_image_count; j++) {
                 sp->set_buffer(j, 1, &data, sizeof(SpriteModel));
@@ -90,6 +94,7 @@ public:
         float max_amp = 4.0f;
         for (size_t bin = 0; bin < bin_count; bin++) {
             float avg_amp = 0.0f;
+            float maxx_amp = 0.0f;
             for (size_t i = 0; i < frequencies_per_bin; i++)
                 avg_amp += current_frequencies[bin * frequencies_per_bin + i + first_frequency];
             amps[bin] = avg_amp / static_cast<float>(frequencies_per_bin);
@@ -102,7 +107,7 @@ public:
         }
 
         for (size_t i = 0; i < m_bar_count; i++) {
-            const auto amp = amps[i];
+            const auto amp = amps[i] * m_scale_factor;
             // using namespace std;
             // cout << "i: " << i << " amp: " << amp << endl;
             auto bone_buffer = BoneBuffer {};
@@ -115,6 +120,12 @@ public:
             }
         }
 
+        // auto camera = m_vis->get_camera();
+        // auto data = camera->get_data();
+        // data.view = glm::lookAt(glm::vec3(0.0f, 20 * glm::cos(2 * M_PI * m_frame / 1000), 20.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+        //                            glm::vec3(0.0f, 0.0f, 1.0f));
+        // camera->set_data(data);
+
         while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_last_frame).
                count() < 1000 / m_frame_rate) {
         }
@@ -124,11 +135,13 @@ public:
 private:
     Visual* m_vis;
     size_t m_image_count;
+    float m_scale_factor;
+    float m_bar_diameter;
     std::vector<float> m_bone_displacement;
     size_t m_frame = 0;
     size_t m_bar_count = 32;
     float m_bars_width = 16;
-    float m_bar_margin = 0.1;
+    float m_bar_margin = 0.2;
 
     AudioRecord* m_audio_record;
 

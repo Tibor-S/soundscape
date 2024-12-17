@@ -30,25 +30,25 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+    static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
+        std::vector<VkVertexInputAttributeDescription> attribute_descriptions(3);
 
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+        attribute_descriptions[0].binding = 0;
+        attribute_descriptions[0].location = 0;
+        attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[0].offset = offsetof(Vertex, pos);
 
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
+        attribute_descriptions[1].binding = 0;
+        attribute_descriptions[1].location = 1;
+        attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[1].offset = offsetof(Vertex, color);
 
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+        attribute_descriptions[2].binding = 0;
+        attribute_descriptions[2].location = 2;
+        attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attribute_descriptions[2].offset = offsetof(Vertex, texCoord);
 
-        return attributeDescriptions;
+        return attribute_descriptions;
     }
 };
 
@@ -63,10 +63,11 @@ template<> struct std::hash<Vertex> {
 struct BarVertex {
     glm::vec3 pos;
     glm::vec3 color;
+    glm::vec3 normal;
     glm::int32 b_index;
 
     bool operator==(const BarVertex& other) const {
-        return pos == other.pos && color == other.color && b_index == other.b_index;
+        return pos == other.pos && color == other.color && b_index == other.b_index && normal == other.normal;
     }
 
     static VkVertexInputBindingDescription get_binding_description() {
@@ -78,32 +79,38 @@ struct BarVertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+    static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
+        std::vector<VkVertexInputAttributeDescription> attribute_descriptions(4);
 
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(BarVertex, pos);
+        attribute_descriptions[0].binding = 0;
+        attribute_descriptions[0].location = 0;
+        attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[0].offset = offsetof(BarVertex, pos);
 
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(BarVertex, color);
+        attribute_descriptions[1].binding = 0;
+        attribute_descriptions[1].location = 1;
+        attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[1].offset = offsetof(BarVertex, color);
 
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32_SINT;
-        attributeDescriptions[2].offset = offsetof(BarVertex, b_index);
+        attribute_descriptions[2].binding = 0;
+        attribute_descriptions[2].location = 2;
+        attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[2].offset = offsetof(BarVertex, normal);
 
-        return attributeDescriptions;
+        attribute_descriptions[3].binding = 0;
+        attribute_descriptions[3].location = 3;
+        attribute_descriptions[3].format = VK_FORMAT_R32_SINT;
+        attribute_descriptions[3].offset = offsetof(BarVertex, b_index);
+
+        return attribute_descriptions;
     }
 };
 
 template<> struct std::hash<BarVertex> {
     size_t operator()(BarVertex const& vertex) const noexcept {
-        return ((hash<glm::vec3>()(vertex.pos) ^
+        return (((hash<glm::vec3>()(vertex.pos) ^
                  (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+                 (hash<glm::vec3>()(vertex.normal) << 1) >> 1) ^
                (hash<glm::int32>()(vertex.b_index) << 1);
     }
 };

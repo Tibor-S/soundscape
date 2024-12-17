@@ -62,7 +62,7 @@ public:
         throw std::runtime_error("Invalid kind");
     }
 
-    [[nodiscard]] std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() const {
+    [[nodiscard]] std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() const {
         switch (m_kind) {
             case CAMERA_MODEL_SAMPLER:
                 return Vertex::get_attribute_descriptions();
