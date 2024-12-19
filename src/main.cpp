@@ -94,6 +94,13 @@ public:
     void inter_frame() override {
         m_frame += 1;
 
+        if (m_frame % 1000 == 0) {
+            using namespace std;
+            cout << "Trying to recognize" << endl;
+            m_audio_record->recognize();
+            // return;
+        }
+
         const size_t first_frequency = 24;
         const size_t last_frequency = 4187;
         const size_t frequency_count = last_frequency - first_frequency;

@@ -15,6 +15,9 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
+#include <vibra/vibra.h>
+#include <vibra/communication/shazam.h>
+#include <fstream>
 
 struct RecordData {
     size_t next_sample_index = 0;  /* Index into sample array. */
@@ -121,7 +124,6 @@ public:
             m_is_alive = false;
             return;
         }
-
         m_input_parameters.channelCount = 1;
         m_input_parameters.sampleFormat = paFloat32;
         m_input_parameters.suggestedLatency = Pa_GetDeviceInfo(m_input_parameters.device)->defaultLowInputLatency;
@@ -188,21 +190,6 @@ public:
     }
     [[nodiscard]] std::vector<float>& current_frequencies() {
         const auto data = recorded_data();
-        //
-        // for (size_t k = 0; k < data.size(); k++) {
-        //     m_dft_real[k] = 0;
-        //     m_dft_imag[k] = 0;
-        //     for (size_t n = 0; n < data.size(); n++) {
-        //         auto exp_real = glm::cos(- 2 * M_PI * (float)k * n / (float)data.size());
-        //         auto exp_imag = glm::sin(- 2 * M_PI * (float)k * n / (float)data.size());
-        //
-        //         m_dft_real[k] += data[n] * exp_real;
-        //         m_dft_imag[k] += data[n] * exp_imag;
-        //     }
-        //     m_dft_out[k] = glm::length(glm::vec2(m_dft_real[k], m_dft_imag[k]));
-        // }
-        //
-
         auto magnitude = static_cast<size_t>(glm::log2(static_cast<float>(data.size())));
         auto n = data.size();
         for (size_t k = 0; k < n; k++) {
@@ -253,11 +240,15 @@ public:
 
         return m_dft_out;
     }
+    void recognize() {
+        m_recording_thread = new std::thread(auxiliary_recognize, &m_input_parameters);
+        // auxiliary_recognize(&m_input_parameters);
+    }
 private:
     size_t m_sample_rate;
     size_t m_frame_size;
     PaError m_err = paNoError;
-    PaStreamParameters m_input_parameters;
+    PaStreamParameters m_input_parameters{};
     PaStream* m_stream = nullptr;
 
     AudioRecordCallback* m_arc = nullptr;
@@ -312,6 +303,60 @@ private:
         // delete *arc;
         // *arc = nullptr;
         return err;
+    }
+
+    static int recognize_callback(const void *input_buffer, void *output_buffer,
+                           const unsigned long frames_per_buffer,
+                           const PaStreamCallbackTimeInfo* time_info,
+                           PaStreamCallbackFlags status_flags,
+                           void *user_data)
+    {
+        const auto recorded_data = static_cast<std::vector<float>*>(user_data);
+        const auto *read_ptr = static_cast<const float *>(input_buffer);
+
+
+        for(size_t i=0; i<frames_per_buffer; i++) {
+            recorded_data->push_back(read_ptr[i]);
+        }
+
+        return paContinue;
+    }
+    static void auxiliary_recognize(const PaStreamParameters* input_parameters) {
+        PaStream* stream;
+        std::vector<float> recorded_data;
+        PaError err = Pa_OpenStream(
+            &stream,
+            input_parameters,
+            nullptr, /* &outputParameters, */
+            44100,
+            512,
+            paClipOff, /* we won't output out of range samples so don't bother clipping them */
+            &recognize_callback,
+            &recorded_data
+        );
+        if(err != paNoError) {
+            // return err;
+        }
+
+        err = Pa_StartStream(stream);
+        if( err != paNoError ) {
+            // return err;
+        }
+
+        Pa_Sleep(5000);
+
+        err = Pa_StopStream(stream);
+        if(err != paNoError) {
+            // return err;
+        }
+
+        auto fp = vibra_get_fingerprint_from_float_pcm(reinterpret_cast<const char *>(recorded_data.data()), recorded_data.size() * sizeof(float), 44100, sizeof(float) * 8, 1);
+        auto song_data = Shazam::Recognize(fp);
+        using namespace std;
+        cout << song_data << endl;
+        // std::ofstream outFile("/Users/sebastian/CLionProjects/soundscape/my_file.txt");
+        // // the important part
+        // for (const auto &e : data) outFile << e << ", ";
     }
 };
 

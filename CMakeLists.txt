@@ -12,11 +12,16 @@ set(ENV{VK_LAYER_PATH} ${VULKAN_SDK}/etc/vulkan/explicit_layer.d)
 set(ENV{VK_LOADER_DEBUG} all)
 
 # Find dependencies
+find_library(CURL_LIBRARY NAMES curl)
 find_package(glfw3 3.4 REQUIRED)
 #find_package(glm REQUIRED)
 find_package(Vulkan REQUIRED)
 #find_package(Vulkan REQUIRED)
 #find_package(portaudio REQUIRED)
+
+set(FFTW3_PATH /opt/homebrew/Cellar/fftw/3.3.10_1)
+set(FFTW3_INCLUDE_DIR ${FFTW3_PATH}/include)
+set(FFTW3_LIBRARY ${FFTW3_PATH}/lib/libfftw3.a)
 
 # Include directories (if needed for custom libraries)
 include_directories(${VULKAN_SDK}/include)
@@ -27,6 +32,7 @@ include_directories(./inc)
 
 set(SOURCE_FILES
         src/Visual.cpp
+        src/vibra/communication/shazam.cpp
 
         src/HelloTriangleApplication.cpp
         src/Device.cpp
@@ -102,12 +108,22 @@ add_executable(soundscape src/main.cpp
 add_library(portaudio STATIC IMPORTED)
 set_target_properties(portaudio PROPERTIES IMPORTED_LOCATION /Users/sebastian/CLionProjects/soundscape/lib/portaudio/libportaudio.a)
 
+add_library(vibra STATIC IMPORTED)
+set_target_properties(vibra PROPERTIES IMPORTED_LOCATION /Users/sebastian/CLionProjects/soundscape/lib/vibra/libvibra.a)
+
+set(CURL_LIBRARY "-lcurl")
+find_package(CURL REQUIRED)
+
+
 # Link libraries
 target_link_libraries(soundscape PRIVATE
 #        glm
         glfw
         Vulkan::Vulkan
         portaudio
+        vibra
+        curl
+        ${FFTW3_LIBRARY}
 )
 
 if(APPLE)
@@ -127,5 +143,5 @@ endif()
 target_include_directories(soundscape PRIVATE
         ${VULKAN_SDK}/include
         ./include
-        ${FFTW3_DIR}/api
+        ${FFTW3_INCLUDE_DIR}
 )

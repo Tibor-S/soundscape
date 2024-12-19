@@ -1,3 +1,0 @@
-/Users/sebastian/CLionProjects/soundscape/cmake-build-debug/CMakeFiles/soundscape.dir
-/Users/sebastian/CLionProjects/soundscape/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/sebastian/CLionProjects/soundscape/cmake-build-debug/CMakeFiles/rebuild_cache.dir
