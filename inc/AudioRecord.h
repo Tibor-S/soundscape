@@ -8,8 +8,8 @@
 #include <iostream>
 #include <portaudio.h>
 #include <thread>
-#include <utility>
 #include <vector>
+#include <string.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec4.hpp>
@@ -18,6 +18,9 @@
 #include <vibra/vibra.h>
 #include <vibra/communication/shazam.h>
 #include <fstream>
+#include <json.hpp>
+
+using namespace nlohmann;
 
 struct RecordData {
     size_t next_sample_index = 0;  /* Index into sample array. */
@@ -106,10 +109,47 @@ private:
     std::mutex m_mutex;
 };
 
-class AudioRecord {
+class RecognizeSong {
 public:
-    explicit AudioRecord(const size_t sample_rate = 44100, const size_t frame_size = 512) : m_sample_rate(sample_rate),
-        m_frame_size(frame_size), m_dft_real(m_sample_rate), m_dft_imag(m_sample_rate), m_dft_out(m_sample_rate / 2)
+    RecognizeSong() = default;
+    ~RecognizeSong() = default;
+
+    void recognize(const Fingerprint* fp) {
+        m_song_data = json::parse(Shazam::Recognize(fp));
+        std::cout << "Recognize Song Data: " << m_song_data << std::endl;
+        if (!m_song_data.contains("track")) {
+            reset_fields();
+            return;
+        }
+        auto track = m_song_data["track"];
+
+        std::optional<std::string> cover_art = std::nullopt;
+        if (track.contains("images")) {
+            if (const auto images = track["images"]; images.contains("coverart")) {
+                cover_art = images["coverart"].template get<std::string>();
+            }
+        }
+        m_cover_art = cover_art;
+    }
+
+    [[nodiscard]] std::optional<std::string> get_cover_art_url() const { return m_cover_art; }
+
+
+private:
+    basic_json<> m_song_data = json::parse(R"({})");
+    std::optional<std::string> m_cover_art;
+
+    void reset_fields() {
+        m_song_data = json::parse(R"({})");
+        m_cover_art = std::nullopt;
+    }
+};
+
+class AudioRecord : RecognizeSong {
+public:
+    explicit AudioRecord(const size_t sample_rate = 44100, const size_t frame_size = 512) : RecognizeSong(),
+        m_sample_rate(sample_rate), m_frame_size(frame_size), m_dft_real(m_sample_rate), m_dft_imag(m_sample_rate),
+        m_dft_out(m_sample_rate / 2)
     {
         m_err = Pa_Initialize();
         if(m_err != paNoError) {
@@ -130,6 +170,7 @@ public:
         m_input_parameters.hostApiSpecificStreamInfo = nullptr;
     }
     ~AudioRecord() {
+        stop_recognition();
         Pa_Terminate();
         if(m_err != paNoError)
         {
@@ -240,9 +281,26 @@ public:
 
         return m_dft_out;
     }
-    void recognize() {
-        m_recording_thread = new std::thread(auxiliary_recognize, &m_input_parameters);
-        // auxiliary_recognize(&m_input_parameters);
+    void start_recognition() {
+        std::lock_guard<std::mutex> guard(m_recognition_mutex);
+        if (m_recognition_thread != nullptr) {
+            using namespace std;
+            cout << "Tried starting recognition when it has already started" << endl;
+        }
+        m_continue_recognition = true;
+        m_recognition_thread = new std::thread(&AudioRecord::auxiliary_recognize, this);
+    }
+    void stop_recognition() {
+        {
+            std::lock_guard<std::mutex> guard(m_recognition_mutex);
+            m_continue_recognition = false;
+        }
+        if (m_recognition_thread == nullptr) {
+            return;
+        }
+        m_recognition_thread->join();
+        delete m_recognition_thread;
+        m_recognition_thread = nullptr;
     }
 private:
     size_t m_sample_rate;
@@ -254,11 +312,23 @@ private:
     AudioRecordCallback* m_arc = nullptr;
     std::thread* m_recording_thread = nullptr;
 
+    bool m_continue_recognition;
+    std::thread* m_recognition_thread;
+    std::mutex m_recognition_mutex;
+
+
     std::vector<float> m_dft_real;
     std::vector<float> m_dft_imag;
     std::vector<float> m_dft_out;
 
     bool m_is_alive = true;
+
+    struct RecognitionData {
+        bool fill_buffer;
+        std::vector<float> buffer;
+        size_t buffer_limit;
+        size_t index;
+    };
 
     static int callback(const void *input_buffer, void *output_buffer,
                            const unsigned long frames_per_buffer,
@@ -311,28 +381,43 @@ private:
                            PaStreamCallbackFlags status_flags,
                            void *user_data)
     {
-        const auto recorded_data = static_cast<std::vector<float>*>(user_data);
+
+        const auto recognition_data = static_cast<RecognitionData*>(user_data);
+        if (!recognition_data->fill_buffer) return paContinue;
         const auto *read_ptr = static_cast<const float *>(input_buffer);
 
+        const auto free_space = recognition_data->buffer_limit - recognition_data->index;
+        const auto end = std::min(free_space, frames_per_buffer);
+        for(size_t i=0; i<end; i++) {
+            recognition_data->buffer[recognition_data->index++] = read_ptr[i];
+        }
 
-        for(size_t i=0; i<frames_per_buffer; i++) {
-            recorded_data->push_back(read_ptr[i]);
+        if (recognition_data->index >= recognition_data->buffer_limit) {
+            recognition_data->fill_buffer = false;
         }
 
         return paContinue;
     }
-    static void auxiliary_recognize(const PaStreamParameters* input_parameters) {
+    void auxiliary_recognize() {
+        using namespace std;
         PaStream* stream;
-        std::vector<float> recorded_data;
+        RecognitionData recognition_data {
+            .fill_buffer = false,
+            .buffer_limit = 44100*4,
+            .index = 0
+        };
+        recognition_data.buffer = std::vector<float>(recognition_data.buffer_limit);
+        cout << "Buffer max: " << ranges::max(recognition_data.buffer) << endl;
+        cout << "Buffer min: " << ranges::min(recognition_data.buffer) << endl;
         PaError err = Pa_OpenStream(
             &stream,
-            input_parameters,
+            &m_input_parameters,
             nullptr, /* &outputParameters, */
             44100,
             512,
             paClipOff, /* we won't output out of range samples so don't bother clipping them */
             &recognize_callback,
-            &recorded_data
+            &recognition_data
         );
         if(err != paNoError) {
             // return err;
@@ -343,20 +428,49 @@ private:
             // return err;
         }
 
-        Pa_Sleep(5000);
+
+        while(continue_recognition()) {
+            cout << "new loop" << endl;
+
+            recognition_data.index = 0;
+            recognition_data.fill_buffer = true;
+            cout << "recording" << endl;
+            Pa_Sleep(5000);
+            cout << "samples: " << recognition_data.index << " and " << recognition_data.buffer.size() << endl;
+            cout << "Buffer max: " << ranges::max(recognition_data.buffer) << endl;
+            cout << "Buffer min: " << ranges::min(recognition_data.buffer) << endl;
+            recognition_data.fill_buffer = false;
+            {
+                cout << "Getting recognition lock in loop" << endl;
+                std::lock_guard<std::mutex> guard(m_recognition_mutex);
+                auto recorded_data = recognition_data.buffer;
+                cout << "Getting finger print" << endl;
+                auto fp = vibra_get_fingerprint_from_float_pcm(reinterpret_cast<const char *>(recorded_data.data()),
+                                                               recognition_data.index * sizeof(float), 44100,
+                                                               sizeof(float) * 8, 1);
+                cout << "Fingerprint: " << fp->uri << endl;
+                recognize(fp);
+                cout << get_cover_art_url().value_or("No cover art") << endl;
+            }
+
+            cout << "Sleeping loop" << endl;
+            Pa_Sleep(10000);
+        }
+
 
         err = Pa_StopStream(stream);
         if(err != paNoError) {
             // return err;
         }
-
-        auto fp = vibra_get_fingerprint_from_float_pcm(reinterpret_cast<const char *>(recorded_data.data()), recorded_data.size() * sizeof(float), 44100, sizeof(float) * 8, 1);
-        auto song_data = Shazam::Recognize(fp);
-        using namespace std;
-        cout << song_data << endl;
+        // recognize_callback->call(fp);
         // std::ofstream outFile("/Users/sebastian/CLionProjects/soundscape/my_file.txt");
         // // the important part
         // for (const auto &e : data) outFile << e << ", ";
+    }
+
+    bool continue_recognition() {
+        std::lock_guard<std::mutex> guard(m_recognition_mutex);
+        return m_continue_recognition;
     }
 };
 

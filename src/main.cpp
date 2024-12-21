@@ -37,6 +37,8 @@ public:
         const float bar_total_width = m_bars_width - m_bar_margin * (static_cast<float>(m_bar_count) - 1);
         m_bar_diameter = bar_total_width / static_cast<float>(m_bar_count);
         m_scale_factor = 1 / (m_bar_diameter / 2.0f);
+
+        m_audio_record->start_recognition();
     }
     ~Application() override {
         delete m_audio_record;
@@ -93,13 +95,13 @@ public:
 
     void inter_frame() override {
         m_frame += 1;
-
-        if (m_frame % 1000 == 0) {
-            using namespace std;
-            cout << "Trying to recognize" << endl;
-            m_audio_record->recognize();
-            // return;
-        }
+        //
+        // if (m_frame % 1000 == 0) {
+        //     using namespace std;
+        //     cout << "Trying to recognize" << endl;
+        //     m_audio_record->start_recognition();
+        //     // return;
+        // }
 
         const size_t first_frequency = 24;
         const size_t last_frequency = 4187;
@@ -169,136 +171,6 @@ private:
 
 };
 
-#define 	SAMPLE_RATE   (44100)
-#define 	FRAMES_PER_BUFFER   (512)
-#define 	NUM_SECONDS   (5)
-#define 	NUM_CHANNELS   (1)
-#define 	DITHER_FLAG   (0)
-#define 	WRITE_TO_FILE   (0)
-#define 	PA_SAMPLE_TYPE   paFloat32
-#define 	SAMPLE_SILENCE   (0.0f)
-#define 	PRINTF_S_FORMAT   "%.8f"
-typedef float 	SAMPLE;
-
-typedef struct
-{
-    int          frameIndex;  /* Index into sample array. */
-    int          maxFrameIndex;
-    SAMPLE      *recordedSamples;
-}
-paTestData;
-/* This routine will be called by the PortAudio engine when audio is needed.
- * It may call at interrupt level on some machines so don't do anything
- * that could mess up the system like calling malloc() or free().
-*/
-static int recordCallback( const void *inputBuffer, void *outputBuffer,
-                           unsigned long framesPerBuffer,
-                           const PaStreamCallbackTimeInfo* timeInfo,
-                           PaStreamCallbackFlags statusFlags,
-                           void *userData )
-{
-    paTestData *data = (paTestData*)userData;
-    const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
-    SAMPLE *wptr = &data->recordedSamples[data->frameIndex * NUM_CHANNELS];
-    long framesToCalc;
-    long i;
-    int finished;
-    unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
-
-    (void) outputBuffer; /* Prevent unused variable warnings. */
-    (void) timeInfo;
-    (void) statusFlags;
-    (void) userData;
-
-    if( framesLeft < framesPerBuffer )
-    {
-        framesToCalc = framesLeft;
-        finished = paComplete;
-    }
-    else
-    {
-        framesToCalc = framesPerBuffer;
-        finished = paContinue;
-    }
-
-    if( inputBuffer == NULL )
-    {
-        for( i=0; i<framesToCalc; i++ )
-        {
-            *wptr++ = SAMPLE_SILENCE;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = SAMPLE_SILENCE;  /* right */
-        }
-    }
-    else
-    {
-        for( i=0; i<framesToCalc; i++ )
-        {
-            *wptr++ = *rptr++;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = *rptr++;  /* right */
-        }
-    }
-    data->frameIndex += framesToCalc;
-    return finished;
-}
-static int playCallback( const void *inputBuffer, void *outputBuffer,
-                         unsigned long framesPerBuffer,
-                         const PaStreamCallbackTimeInfo* timeInfo,
-                         PaStreamCallbackFlags statusFlags,
-                         void *userData )
-{
-    paTestData *data = (paTestData*)userData;
-    SAMPLE *rptr = &data->recordedSamples[data->frameIndex * NUM_CHANNELS];
-    SAMPLE *wptr = (SAMPLE*)outputBuffer;
-    unsigned int i;
-    int finished;
-    unsigned int framesLeft = data->maxFrameIndex - data->frameIndex;
-
-    (void) inputBuffer; /* Prevent unused variable warnings. */
-    (void) timeInfo;
-    (void) statusFlags;
-    (void) userData;
-
-    if( framesLeft < framesPerBuffer )
-    {
-        /* final buffer... */
-        for( i=0; i<framesLeft; i++ )
-        {
-            *wptr++ = *rptr++;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = *rptr++;  /* right */
-        }
-        for( ; i<framesPerBuffer; i++ )
-        {
-            *wptr++ = 0;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = 0;  /* right */
-        }
-        data->frameIndex += framesLeft;
-        finished = paComplete;
-    }
-    else
-    {
-        for( i=0; i<framesPerBuffer; i++ )
-        {
-            *wptr++ = *rptr++;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = *rptr++;  /* right */
-        }
-        data->frameIndex += framesPerBuffer;
-        finished = paContinue;
-    }
-    return finished;
-}
-static paTestData data;
-void done(PaError err) {
-    Pa_Terminate();
-    if( data.recordedSamples )       /* Sure it is NULL or valid. */
-        free( data.recordedSamples );
-    if( err != paNoError )
-    {
-        fprintf( stderr, "An error occurred while using the portaudio stream\n" );
-        fprintf( stderr, "Error number: %d\n", err );
-        fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
-        err = 1;          /* Always return 0 or 1, but no other return codes. */
-    }
-}
 int main() {
     printEnv("VULKAN_SDK");
     printEnv("VK_ICD_FILENAMES");
