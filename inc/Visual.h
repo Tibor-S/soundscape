@@ -241,6 +241,16 @@ private:
 
         return VK_FALSE;
     }
+    void update_camera_projection() const {
+        auto camera = get_camera();
+        auto data = camera->get_data();
+        const auto width = static_cast<float>(m_render_target->get_swap_chain()->get_extent().width);
+        const auto height = static_cast<float>(m_render_target->get_swap_chain()->get_extent().height);
+        auto proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 100.0f);
+        proj[1][1] *= -1;
+        data.proj = proj;
+        camera->set_data(data);
+    }
 };
 
 

@@ -8,6 +8,7 @@
 #include <Texture.h>
 #include <tiny_obj_loader.h>
 #include <Vertex.h>
+#include <iostream>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
@@ -40,17 +41,18 @@ public:
     void append_index(uint32_t index) {
         m_indices.push_back(index);
     }
-    // void set_vertices(std::pmr::vector<Vertex>& vertices) { return &m_vertices; }
-    // void set_indices(std::pmr::vector<Vertex>& vertices) { return &m_indices; }
+    // void set_vertices(std::pmr::vector<StandardVertex>& vertices) { return &m_vertices; }
+    // void set_indices(std::pmr::vector<StandardVertex>& vertices) { return &m_indices; }
 private:
     size_t m_vertex_size;
     std::vector<char> m_vertices;
     std::vector<uint32_t> m_indices;
 };
 
+template <typename T>
 class LoadObjModel : public LoadModel {
 public:
-    explicit LoadObjModel(const char* obj_path) : LoadModel(sizeof(Vertex)) {
+    explicit LoadObjModel(const char* obj_path) : LoadModel(sizeof(T)) {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
@@ -60,229 +62,206 @@ public:
             throw std::runtime_error(warn + err);
         }
 
-        std::unordered_map<Vertex, uint32_t> unique_vertices{};
-
-        auto vertices = get_vertices();
-        auto indices = get_indices();
+        auto object = Object3D();
+        // std::unordered_map<SourceVertex, uint32_t> unique_vertices{};
+        std::unordered_map<std::string, size_t> vertex_group_names{};
+        std::vector<glm::i8vec2> vertex_groups {};
+        auto normals = std::vector<glm::vec3>();
+        // auto vertices = std::vector<SourceVertex>();
         for (const auto& shape : shapes) {
-            for (const auto& index : shape.mesh.indices) {
-                Vertex vertex{};
+            if (!vertex_group_names.contains(shape.name)) {
+                vertex_group_names[shape.name] = vertex_group_names.size();
+            }
 
-                vertex.pos = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
+            for (size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
+                std::array<ObjVertex::Unique, 3> face{};
+                tinyobj::index_t data_index{};
+                glm::vec3 face_normal = {
+                    attrib.normals[3 * shape.mesh.indices[i].normal_index + 0],
+                    attrib.normals[3 * shape.mesh.indices[i].normal_index + 1],
+                    attrib.normals[3 * shape.mesh.indices[i].normal_index + 2],
                 };
 
-                vertex.texCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                };
+                for (size_t face_index = 0; face_index < 3; face_index++) {
+                    data_index = shape.mesh.indices[i + face_index];
 
-                vertex.color = {1.0f, 1.0f, 1.0f};
+                    face[face_index].pos = {
+                        attrib.vertices[3 * data_index.vertex_index + 0],
+                        attrib.vertices[3 * data_index.vertex_index + 1],
+                        attrib.vertices[3 * data_index.vertex_index + 2]
+                    };
 
-                if (!unique_vertices.contains(vertex)) {
-                    unique_vertices[vertex] = static_cast<uint32_t>(unique_vertices.size());
+                    face[face_index].color = {1.0f, 1.0f, 1.0f};
 
-                    auto serialized_vertex = reinterpret_cast<char*>(&vertex);
-                    for (int i = 0; i < sizeof(vertex); i++) {
-                        vertices->push_back(serialized_vertex[i]);
-                    }
+                    face[face_index].tex_coord = {
+                        attrib.texcoords[2 * data_index.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * data_index.texcoord_index + 1]
+                    };
+
                 }
 
-                indices->push_back(unique_vertices[vertex]);
+                object.add_face(face, face_normal, vertex_group_names[shape.name]);
+
+                // if (!unique_vertices.contains(source_vertex)) {
+                //     unique_vertices[source_vertex] = static_cast<uint32_t>(unique_vertices.size());
+                //     // append_vertex(source_vertex);
+                //     vertices.push_back(source_vertex);
+                //     normals.emplace_back(0.0f, 0.0f, 0.0f);
+                //     vertex_groups.emplace_back(vertex_group_names[shape.name], -1);
+                //     // auto serialized_vertex = reinterpret_cast<char*>(&vertex);
+                //     // for (int i = 0; i < sizeof(vertex); i++) {
+                //     //     vertices->push_back(serialized_vertex[i]);
+                //     // }
+                // } else if (vertex_groups[unique_vertices[source_vertex]].x !=  vertex_group_names[shape.name]) {
+                //     // if (vertex_groups[unique_vertices[source_vertex]].y == -1) {
+                //     //
+                //     // }
+                // }
+
+                // normals[unique_vertices[source_vertex]].x += attrib.normals[3 * index.normal_index + 0];
+                // normals[unique_vertices[source_vertex]].y += attrib.normals[3 * index.normal_index + 1];
+                // normals[unique_vertices[source_vertex]].z += attrib.normals[3 * index.normal_index + 2];
+                // append_index(unique_vertices[source_vertex]);
+                // indices->push_back(unique_vertices[vertex]);
             }
         }
+
+        auto vertices = object.get_vertices<T>();
+        for (size_t i = 0; i < vertices.size(); i++) {
+            // SourceVertex source_vertex = vertices[i];
+            // source_vertex.normal = glm::normalize(normals[i]);
+            // std::cout << "t.x: " << source_vertex.tex_coord.x << ", t.y: " << source_vertex.tex_coord.y << std::endl;
+            // std::cout << "\tonormal:\t" << normals[i].x << ", " << normals[i].y << ", " << normals[i].z << std::endl;
+            // std::cout << "\tnormal:\t" << source_vertex.normal.x << ", " << source_vertex.normal.y << ", " << source_vertex.normal.z << std::endl;
+            // T vertex(source_vertex);
+
+            append_vertex(vertices[i]);
+        }
+        for (auto index : object.get_indices()) {
+            append_index(index);
+        }
     }
-    ~LoadObjModel() = default;
 };
 
 
 class LoadBarModel : public LoadModel {
 public:
     LoadBarModel(double radius, double cylinder_height, size_t lat_res, size_t lon_res) : LoadModel(sizeof(BarVertex)) {
-        std::unordered_map<BarVertex, size_t> unique_vertices;
-        std::vector<BarVertex> vertices{};
-        std::map<size_t, glm::vec3> normals;
-
-        auto z_offset = cylinder_height / 2;
-
-        auto float_lat_res = static_cast<double>(lat_res);
-        auto float_lon_res = static_cast<double>(lon_res);
-        for (size_t i = 0; i < lat_res + 1; i++) {
-            auto float_i_top = static_cast<double>(i);
-            auto float_i_bot = static_cast<double>(i + 1);
-
-            auto u_top_deg = M_PI / 2 + M_PI * float_i_top / float_lat_res;
-            auto u_bot_deg = M_PI / 2 + M_PI * float_i_bot / float_lat_res;
-
-            auto z_top = radius * glm::sin(u_top_deg);
-            auto z_bot = radius * glm::sin(u_bot_deg);
-
-            auto horizontal_radius_top = radius * glm::cos(u_top_deg);
-            auto horizontal_radius_bot = radius * glm::cos(u_bot_deg);
-
-            for (size_t j = 0; j < lon_res; j++) {
-                auto float_j_left = static_cast<double>(j);
-                auto float_j_right = static_cast<double>(j + 1);
-
-                auto v_left = 2 * M_PI * float_j_left / float_lon_res;
-                auto v_right = 2 * M_PI * float_j_right / float_lon_res;
-
-                auto color1 = glm::vec3(1.0, 1.0, 0.0);
-                auto color2 = glm::vec3(1.0, 1.0, 0.0);
-                auto color3 = glm::vec3(1.0, 1.0, 0.0);
-                auto color4 = glm::vec3(1.0, 1.0, 0.0);
-
-                auto x_top_left = horizontal_radius_top * glm::cos(v_left);
-                auto y_top_left = horizontal_radius_top * glm::sin(v_left);
-                auto z_top_left = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
-                auto pos_top_left = glm::vec3(x_top_left, y_top_left, z_top_left);
-
-                auto x_top_right = horizontal_radius_top * glm::cos(v_right);
-                auto y_top_right = horizontal_radius_top * glm::sin(v_right);
-                auto z_top_right = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
-                auto pos_top_right = glm::vec3(x_top_right, y_top_right, z_top_right);
-
-                auto x_bot_left = horizontal_radius_bot * glm::cos(v_left);
-                auto y_bot_left = horizontal_radius_bot * glm::sin(v_left);
-                auto z_bot_left = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
-                auto pos_bot_left = glm::vec3(x_bot_left, y_bot_left, z_bot_left);
-
-                auto x_bot_right = horizontal_radius_bot * glm::cos(v_right);
-                auto y_bot_right = horizontal_radius_bot * glm::sin(v_right);
-                auto z_bot_right = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
-                auto pos_bot_right = glm::vec3(x_bot_right, y_bot_right, z_bot_right);
-
-                glm::int32 b_index_top =  z_top > 0 ? 0 : 1;
-                glm::int32 b_index_bot =  z_bot > 0 ? 0 : 1;
-
-                auto vert_top_left = BarVertex {.pos = pos_top_left, .color = color1, .b_index = b_index_top};
-                auto vert_top_right = BarVertex {.pos = pos_top_right, .color = color2, .b_index = b_index_top};
-                auto vert_bot_left = BarVertex {.pos = pos_bot_left, .color = color3, .b_index = b_index_bot};
-                auto vert_bot_right = BarVertex {.pos = pos_bot_right, .color = color4, .b_index = b_index_bot};
-
-                if (!unique_vertices.contains(vert_top_left)) {
-                    unique_vertices[vert_top_left] = static_cast<uint32_t>(unique_vertices.size());
-                    vertices.push_back(vert_top_left);
-                }
-                if (!unique_vertices.contains(vert_top_right)) {
-                    unique_vertices[vert_top_right] = static_cast<uint32_t>(unique_vertices.size());
-                    vertices.push_back(vert_top_right);
-                }
-                if (!unique_vertices.contains(vert_bot_left)) {
-                    unique_vertices[vert_bot_left] = static_cast<uint32_t>(unique_vertices.size());
-                    vertices.push_back(vert_bot_left);
-                }
-                if (!unique_vertices.contains(vert_bot_right)) {
-                    unique_vertices[vert_bot_right] = static_cast<uint32_t>(unique_vertices.size());
-                    vertices.push_back(vert_bot_right);
-                }
-
-                if (!normals.contains(unique_vertices[vert_top_left])) {
-                    normals[unique_vertices[vert_top_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
-                }
-                if (!normals.contains(unique_vertices[vert_top_right])) {
-                    normals[unique_vertices[vert_top_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
-                }
-                if (!normals.contains(unique_vertices[vert_bot_left])) {
-                    normals[unique_vertices[vert_bot_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
-                }
-                if (!normals.contains(unique_vertices[vert_bot_right])) {
-                    normals[unique_vertices[vert_bot_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
-                }
-
-                append_index(unique_vertices[vert_top_left]);
-                append_index(unique_vertices[vert_bot_left]);
-                append_index(unique_vertices[vert_bot_right]);
-
-                append_index(unique_vertices[vert_top_left]);
-                append_index(unique_vertices[vert_bot_right]);
-                append_index(unique_vertices[vert_top_right]);
-
-                auto face_left_normal = glm::cross(vert_bot_left.pos - vert_top_left.pos,
-                                                   vert_bot_right.pos - vert_top_left.pos);
-                auto face_right_normal = glm::cross(vert_bot_right.pos - vert_top_left.pos,
-                                                   vert_top_right.pos - vert_top_left.pos);
-
-                normals[unique_vertices[vert_top_left]] += face_left_normal + face_right_normal;
-                normals[unique_vertices[vert_top_right]] += face_right_normal;
-                normals[unique_vertices[vert_bot_left]] += face_left_normal;
-                normals[unique_vertices[vert_bot_right]] += face_left_normal + face_right_normal;
-            };
-        }
-
-        for (size_t i = 0; i < vertices.size(); i++) {
-            vertices[i].normal = normalize(normals[i]);
-            append_vertex(vertices[i]);
-        }
-    }
-};
-
-class LoadBackDropModel : public LoadModel {
-public:
-    LoadBackDropModel() : LoadModel(sizeof(BarVertex)) {
-        std::map<size_t, glm::vec3> normals;
-
-        auto color = glm::vec3(1.0f, 0.0f, 0.0f);
-        auto b_index = 0;
-        std::vector<glm::vec3> positions = {
-            glm::vec3(-1.0f, -1.0f, 1.0f),
-            glm::vec3(1.0f, -1.0f, 1.0f),
-            glm::vec3(-1.0f, -1.0f, 0.1f),
-            glm::vec3(1.0f, -1.0f, 0.1f),
-            glm::vec3(-1.0f, -1.0f, -1.0f),
-            glm::vec3(1.0f, -1.0f, -1.0f),
-            glm::vec3(-1.0f, 0.1f, -1.0f),
-            glm::vec3(1.0f, 0.1f, -1.0f),
-            glm::vec3(-1.0f, 1.0f, -1.0f),
-            glm::vec3(1.0f, 1.0f, -1.0f),
-        };
-        std::vector<BarVertex> vertices(positions.size());
-
-        for (size_t i = 0; i < positions.size(); i++) {
-            normals[i] = glm::vec3(0.0f, 0.0f, 0.0f);
-            vertices[i] = BarVertex {
-                .pos = positions[i],
-                .color = color,
-                .b_index = b_index,
-                .normal = glm::vec3(0.0f, 0.0f, 0.0f),
-            };
-        }
-
-        for (size_t i = 0; i < vertices.size(); i += 2) {
-            append_index(i);
-            append_index(i+3);
-            append_index(i+2);
-
-            append_index(i);
-            append_index(i+1);
-            append_index(i+3);
-        }
-        // append_index(0);
-        // append_index(3);
-        // append_index(2);
+        // std::unordered_map<BarVertex, size_t> unique_vertices;
+        // std::vector<BarVertex> vertices{};
+        // std::map<size_t, glm::vec3> normals;
         //
-        // append_index(0);
-        // append_index(1);
-        // append_index(3);
+        // auto z_offset = cylinder_height / 2;
         //
-        // append_index(2);
-        // append_index(5);
-        // append_index(4);
+        // auto float_lat_res = static_cast<double>(lat_res);
+        // auto float_lon_res = static_cast<double>(lon_res);
+        // for (size_t i = 0; i < lat_res + 1; i++) {
+        //     auto float_i_top = static_cast<double>(i);
+        //     auto float_i_bot = static_cast<double>(i + 1);
         //
-        // append_index(2);
-        // append_index(3);
-        // append_index(5);
-
-        normals[0] = normals[1] = normals[2] = normals[3] = glm::vec3(0.0, 1.0, 0.0);
-        normals[6] = normals[7] = normals[8] = normals[9] = glm::vec3(0.0, 0.0, 1.0);
-        normals[4] = normals[5] = glm::vec3(0.0, 1.0, 1.0);
-
-        for (size_t i = 0; i < vertices.size(); i++) {
-            vertices[i].normal = normalize(normals[i]);
-            append_vertex(vertices[i]);
-        }
+        //     auto u_top_deg = M_PI / 2 + M_PI * float_i_top / float_lat_res;
+        //     auto u_bot_deg = M_PI / 2 + M_PI * float_i_bot / float_lat_res;
+        //
+        //     auto z_top = radius * glm::sin(u_top_deg);
+        //     auto z_bot = radius * glm::sin(u_bot_deg);
+        //
+        //     auto horizontal_radius_top = radius * glm::cos(u_top_deg);
+        //     auto horizontal_radius_bot = radius * glm::cos(u_bot_deg);
+        //
+        //     for (size_t j = 0; j < lon_res; j++) {
+        //         auto float_j_left = static_cast<double>(j);
+        //         auto float_j_right = static_cast<double>(j + 1);
+        //
+        //         auto v_left = 2 * M_PI * float_j_left / float_lon_res;
+        //         auto v_right = 2 * M_PI * float_j_right / float_lon_res;
+        //
+        //         auto color1 = glm::vec3(1.0, 1.0, 0.0);
+        //         auto color2 = glm::vec3(1.0, 1.0, 0.0);
+        //         auto color3 = glm::vec3(1.0, 1.0, 0.0);
+        //         auto color4 = glm::vec3(1.0, 1.0, 0.0);
+        //
+        //         auto x_top_left = horizontal_radius_top * glm::cos(v_left);
+        //         auto y_top_left = horizontal_radius_top * glm::sin(v_left);
+        //         auto z_top_left = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
+        //         auto pos_top_left = glm::vec3(x_top_left, y_top_left, z_top_left);
+        //
+        //         auto x_top_right = horizontal_radius_top * glm::cos(v_right);
+        //         auto y_top_right = horizontal_radius_top * glm::sin(v_right);
+        //         auto z_top_right = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
+        //         auto pos_top_right = glm::vec3(x_top_right, y_top_right, z_top_right);
+        //
+        //         auto x_bot_left = horizontal_radius_bot * glm::cos(v_left);
+        //         auto y_bot_left = horizontal_radius_bot * glm::sin(v_left);
+        //         auto z_bot_left = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
+        //         auto pos_bot_left = glm::vec3(x_bot_left, y_bot_left, z_bot_left);
+        //
+        //         auto x_bot_right = horizontal_radius_bot * glm::cos(v_right);
+        //         auto y_bot_right = horizontal_radius_bot * glm::sin(v_right);
+        //         auto z_bot_right = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
+        //         auto pos_bot_right = glm::vec3(x_bot_right, y_bot_right, z_bot_right);
+        //
+        //         glm::int32 b_index_top =  z_top > 0 ? 0 : 1;
+        //         glm::int32 b_index_bot =  z_bot > 0 ? 0 : 1;
+        //
+        //         BarVertex vert_top_left = {.pos = pos_top_left, .color = color1, .v_groups = b_index_top};
+        //         BarVertex vert_top_right = {.pos = pos_top_right, .color = color2, .v_groups = b_index_top};
+        //         BarVertex vert_bot_left = {.pos = pos_bot_left, .color = color3, .v_groups = b_index_bot};
+        //         BarVertex vert_bot_right = {.pos = pos_bot_right, .color = color4, .v_groups = b_index_bot};
+        //
+        //         if (!unique_vertices.contains(vert_top_left)) {
+        //             unique_vertices[vert_top_left] = static_cast<uint32_t>(unique_vertices.size());
+        //             vertices.push_back(vert_top_left);
+        //         }
+        //         if (!unique_vertices.contains(vert_top_right)) {
+        //             unique_vertices[vert_top_right] = static_cast<uint32_t>(unique_vertices.size());
+        //             vertices.push_back(vert_top_right);
+        //         }
+        //         if (!unique_vertices.contains(vert_bot_left)) {
+        //             unique_vertices[vert_bot_left] = static_cast<uint32_t>(unique_vertices.size());
+        //             vertices.push_back(vert_bot_left);
+        //         }
+        //         if (!unique_vertices.contains(vert_bot_right)) {
+        //             unique_vertices[vert_bot_right] = static_cast<uint32_t>(unique_vertices.size());
+        //             vertices.push_back(vert_bot_right);
+        //         }
+        //
+        //         if (!normals.contains(unique_vertices[vert_top_left])) {
+        //             normals[unique_vertices[vert_top_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
+        //         }
+        //         if (!normals.contains(unique_vertices[vert_top_right])) {
+        //             normals[unique_vertices[vert_top_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
+        //         }
+        //         if (!normals.contains(unique_vertices[vert_bot_left])) {
+        //             normals[unique_vertices[vert_bot_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
+        //         }
+        //         if (!normals.contains(unique_vertices[vert_bot_right])) {
+        //             normals[unique_vertices[vert_bot_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
+        //         }
+        //
+        //         append_index(unique_vertices[vert_top_left]);
+        //         append_index(unique_vertices[vert_bot_left]);
+        //         append_index(unique_vertices[vert_bot_right]);
+        //
+        //         append_index(unique_vertices[vert_top_left]);
+        //         append_index(unique_vertices[vert_bot_right]);
+        //         append_index(unique_vertices[vert_top_right]);
+        //
+        //         auto face_left_normal = glm::cross(vert_bot_left.pos - vert_top_left.pos,
+        //                                            vert_bot_right.pos - vert_top_left.pos);
+        //         auto face_right_normal = glm::cross(vert_bot_right.pos - vert_top_left.pos,
+        //                                            vert_top_right.pos - vert_top_left.pos);
+        //
+        //         normals[unique_vertices[vert_top_left]] += face_left_normal + face_right_normal;
+        //         normals[unique_vertices[vert_top_right]] += face_right_normal;
+        //         normals[unique_vertices[vert_bot_left]] += face_left_normal;
+        //         normals[unique_vertices[vert_bot_right]] += face_left_normal + face_right_normal;
+        //     };
+        // }
+        //
+        // for (size_t i = 0; i < vertices.size(); i++) {
+        //     vertices[i].normal = normalize(normals[i]);
+        //     append_vertex(vertices[i]);
+        // }
     }
 };
 
@@ -311,6 +290,9 @@ private:
         switch (kind) {
             case VIKING_ROOM:
                 return MODEL_PATH.c_str();
+            case BACK_DROP:
+                return "/Users/sebastian/CLionProjects/soundscape/models/backdrop.obj";
+            case BAR:
             default:
                 return "/Users/sebastian/CLionProjects/soundscape/models/bar.obj";
         }
@@ -320,20 +302,15 @@ private:
     static LoadModel* load_model(Kind kind) {
         switch (kind) {
             case VIKING_ROOM:
-                return new LoadObjModel(get_obj_path(kind));
+                return new LoadObjModel<StandardVertex>(get_obj_path(kind));
             case BAR:
+                return new LoadObjModel<BarVertex>(get_obj_path(kind));//new LoadBarModel(1, 1, 24, 24);
                 return new LoadBarModel(1, 1, 24, 24);
             case BACK_DROP:
-                return new LoadBackDropModel();
+                return new LoadObjModel<BackDropVertex>(get_obj_path(kind));
         }
         throw std::runtime_error("Unknown model kind");
     }
-};
-
-class VikingRoomModel : public LoadObjModel {
-public:
-    VikingRoomModel() : LoadObjModel(MODEL_PATH.c_str()) {}
-    ~VikingRoomModel() override = default;
 };
 
 #endif //MODEL_H

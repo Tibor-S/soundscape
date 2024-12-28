@@ -38,6 +38,7 @@ Framebuffer::Framebuffer(Spec& spec) : SwapChainParent(spec.swap_chain), RenderP
 Framebuffer::~Framebuffer() {
     auto render_pass = get_render_pass();
     auto device = render_pass->get_device();
+    vkDeviceWaitIdle(device->logical_device_handle());
     vkDestroyFramebuffer(device->logical_device_handle(), m_framebuffer, nullptr);
 }
 

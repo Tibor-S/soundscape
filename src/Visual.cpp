@@ -252,7 +252,7 @@ void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
         }
     }
 
-    // Vertex Buffer
+    // StandardVertex Buffer
     std::vector<Model*> loaded_models = {};
     loaded_models.reserve(unique_models.size());
     for (const auto kind : unique_models) {
@@ -291,6 +291,7 @@ void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
     }
 }
 
+
 void Visual::draw_frame() {
     vkWaitForFences(m_device->logical_device_handle(), 1, &m_in_flight_fences[m_current_frame], VK_TRUE, UINT64_MAX);
 
@@ -301,6 +302,7 @@ void Visual::draw_frame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         m_render_target->recreate_swap_chain();
+        update_camera_projection();
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
@@ -352,6 +354,7 @@ void Visual::draw_frame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebuffer_resized) {
         m_framebuffer_resized = false;
         m_render_target->recreate_swap_chain();
+        update_camera_projection();
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
@@ -382,7 +385,6 @@ void Visual::record_render_buffer(VkCommandBuffer command_buffer, size_t index) 
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(command_buffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
 
     VkViewport viewport{};
     viewport.x = 0.0f;

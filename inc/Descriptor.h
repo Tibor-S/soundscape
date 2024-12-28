@@ -21,12 +21,13 @@ public:
         CAMERA,
         MODEL,
         SAMPLER,
-        UNIFORM_BUFFER
+        UNIFORM_BUFFER,
     };
 
     enum Kind {
         CAMERA_MODEL_SAMPLER,
-        CAMERA_MODEL_BUFFER
+        CAMERA_MODEL_BUFFER,
+        BACK_DROP,
     };
 
     explicit Descriptor2(Kind kind) {
@@ -54,9 +55,11 @@ public:
     [[nodiscard]] VkVertexInputBindingDescription get_binding_description() const {
         switch (m_kind) {
             case CAMERA_MODEL_SAMPLER:
-                return Vertex::get_binding_description();
+                return StandardVertex::get_binding_description();
             case CAMERA_MODEL_BUFFER:
                 return BarVertex::get_binding_description();
+            case BACK_DROP:
+                return BackDropVertex::get_binding_description();
         }
 
         throw std::runtime_error("Invalid kind");
@@ -65,9 +68,11 @@ public:
     [[nodiscard]] std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() const {
         switch (m_kind) {
             case CAMERA_MODEL_SAMPLER:
-                return Vertex::get_attribute_descriptions();
+                return StandardVertex::get_attribute_descriptions();
             case CAMERA_MODEL_BUFFER:
                 return BarVertex::get_attribute_descriptions();
+            case BACK_DROP:
+                return BackDropVertex::get_attribute_descriptions();
         }
 
         throw std::runtime_error("Invalid kind");
@@ -86,7 +91,7 @@ private:
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_FRAGMENT_BIT,
                 };
-            return;
+                return;
             case CAMERA_MODEL_BUFFER:
                 m_bindings = {CAMERA, MODEL, UNIFORM_BUFFER};
                 m_shader_stages = {
@@ -94,7 +99,14 @@ private:
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_VERTEX_BIT,
                 };
-            return;
+                return;
+            case BACK_DROP:
+                m_bindings = {CAMERA, UNIFORM_BUFFER};
+                m_shader_stages = {
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                };
+                return;
         }
         throw std::invalid_argument("invalid kind");
     }

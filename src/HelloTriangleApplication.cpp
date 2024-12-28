@@ -137,7 +137,7 @@ void HelloTriangleApplication::initVulkan() {
     // createVertexBuffer();
     // createIndexBuffer();
     // --------------/
-    // Vertex Buffer /
+    // StandardVertex Buffer /
     // ---/----------/
     // {
     //     VertexBuffer::Spec spec = {};
@@ -643,11 +643,11 @@ VkFormat HelloTriangleApplication::findDepthFormat() {
 //         throw std::runtime_error(warn + err);
 //     }
 //
-//     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+//     std::unordered_map<StandardVertex, uint32_t> uniqueVertices{};
 //
 //     for (const auto& shape : shapes) {
 //         for (const auto& index : shape.mesh.indices) {
-//             Vertex vertex{};
+//             StandardVertex vertex{};
 //
 //             vertex.pos = {
 //                 attrib.vertices[3 * index.vertex_index + 0],
@@ -655,7 +655,7 @@ VkFormat HelloTriangleApplication::findDepthFormat() {
 //                 attrib.vertices[3 * index.vertex_index + 2]
 //             };
 //
-//             vertex.texCoord = {
+//             vertex.tex_coord = {
 //                 attrib.texcoords[2 * index.texcoord_index + 0],
 //                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 //             };

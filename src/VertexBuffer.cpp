@@ -15,7 +15,7 @@ VertexBuffer::VertexBuffer(Spec& spec) : DeviceParent(spec.device) {
 
     // std::vector<LoadObjModel*> models;
     // models.resize(models.size());
-    // std::vector<Vertex> vertices;
+    // std::vector<StandardVertex> vertices;
     // std::vector<uint32_t> indices;
     // for (auto model_path : spec.models) {
     //     auto model = new LoadObjModel(model_path);
@@ -32,7 +32,7 @@ VertexBuffer::VertexBuffer(Spec& spec) : DeviceParent(spec.device) {
     // }
     //
     // // --------------/
-    // // Vertex Buffer /
+    // // StandardVertex Buffer /
     // // ---/----------/
     // {
     //     VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();

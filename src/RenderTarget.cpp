@@ -46,6 +46,7 @@ void RenderTarget::recreate_swap_chain() {
     swap_chain_spec.device = get_device();
     swap_chain_spec.window = m_window;
     swap_chain_spec.surface_handle = m_surface_handle;
+    swap_chain_spec.max_image_count = m_max_image_count;
     m_swap_chain = new SwapChain::SwapChain(swap_chain_spec);
 
     Framebuffer::Spec framebuffer_spec{};

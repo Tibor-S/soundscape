@@ -445,16 +445,26 @@ public:
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
 };
 
-class BackDropSprite : public CameraModelBufferSprite {
+class BackDropSprite : public Sprite3 {
 public:
     BackDropSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,
                std::shared_ptr<DescriptorPool> &descriptor_pool,
-               size_t image_count) : CameraModelBufferSprite(Model::BACK_DROP, pipeline_manager, vertex_buffer, descriptor_pool,
+               size_t image_count) : Sprite3(Pipeline2::BACK_DROP, Model::BACK_DROP, pipeline_manager, vertex_buffer, descriptor_pool,
                                                               image_count)
     {
+        set_buffer_bindings({0, 1});
+        set_image_bindings({});
+        set_binding_buffer_kind({
+            UniformBufferManager::CAMERA, UniformBufferManager::LOCAL
+        });
+        set_binding_buffer_size({sizeof(Camera::Data), 4 * 3 * sizeof(float)});
+        set_binding_image_kind({Texture::TX_NULL});
+        set_pipeline_kind(Pipeline2::BACK_DROP);
+        set_descriptor_set_kind(Descriptor2::BACK_DROP);
+
         set_binding_image_kind({Texture::TX_NULL});
         set_model_kind(Model::BACK_DROP);
         set_texture_kind(Texture::TX_NULL);
@@ -463,6 +473,9 @@ public:
 
     [[nodiscard]] static std::optional<Model::Kind> model_kind() { return Model::BACK_DROP; }
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
+
+    [[nodiscard]] static std::optional<Pipeline2::Kind> pipeline_kind() { return Pipeline2::BACK_DROP; }
+    [[nodiscard]] static std::optional<DescriptorSet::Kind> descriptor_set_kind() { return Descriptor2::BACK_DROP; }
 };
 
 #endif //SPRITE_H

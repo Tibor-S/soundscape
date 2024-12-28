@@ -54,6 +54,7 @@ public:
     enum Kind {
         STANDARD,
         BAR,
+        BACK_DROP,
     };
 
     Pipeline2(std::shared_ptr<Device::Device> &device, std::shared_ptr<PipelineLayout2> &layout,
@@ -190,6 +191,8 @@ public:
                 return PipelineLayout2::CAMERA_MODEL_SAMPLER;
             case BAR:
                 return PipelineLayout2::CAMERA_MODEL_BUFFER;
+            case BACK_DROP:
+                return PipelineLayout2::BACK_DROP;
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -207,6 +210,8 @@ private:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/vert.spv";
             case BAR:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_vert.spv";
+            case BACK_DROP:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/backdrop_vert.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -217,6 +222,8 @@ private:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/frag.spv";
             case BAR:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_frag.spv";
+            case BACK_DROP:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/backdrop_frag.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }

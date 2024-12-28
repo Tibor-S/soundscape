@@ -50,7 +50,7 @@ public:
         }
     }
 
-    void load_bars() const {
+    void load_scene() const {
         // const float bar_total_width = m_bars_width - m_bar_margin * (static_cast<float>(m_bar_count) - 1);
         // const float bar_diameter = bar_total_width / static_cast<float>(m_bar_count);
         // const float bar_scale_factor = bar_diameter / 2.0f;
@@ -65,14 +65,18 @@ public:
             .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
         };
 
+
         const float low = (- m_bars_width + m_bar_diameter) / 2.0f;
         for (int i = 0; i < m_bar_count; i++) {
             const auto sp = m_vis->get_sprite(BAR_NAMES[i]);
+            // SpriteModel data = {
+            //     .model_matrix = scale(
+            //         translate(glm::mat4(1.0f),
+            //                   glm::vec3(low + static_cast<float>(i) * (m_bar_diameter + m_bar_margin), 0.0f, 0.0f)),
+            //         glm::vec3(1 / m_scale_factor, 1 / m_scale_factor, 1 / m_scale_factor)),
+            // };
             SpriteModel data = {
-                .model_matrix = scale(
-                    translate(glm::mat4(1.0f),
-                              glm::vec3(low + static_cast<float>(i) * (m_bar_diameter + m_bar_margin), 0.0f, 0.0f)),
-                    glm::vec3(1 / m_scale_factor, 1 / m_scale_factor, 1 / m_scale_factor)),
+                .model_matrix = glm::mat4(1.0f),
             };
             for (size_t j = 0; j < m_image_count; j++) {
                 sp->set_buffer(j, 1, &data, sizeof(SpriteModel));
@@ -80,17 +84,17 @@ public:
             }
         }
 
-        const auto sp = m_vis->get_sprite("back_drop");
-        auto model = SpriteModel {
-            .model_matrix = scale(translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 10.0f)), glm::vec3(30.0f, 20.0f, 20.0f))
-        };
-        auto bone = BoneBuffer {
-            .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
-        };
-        for (size_t j = 0; j < m_image_count; j++) {
-            sp->set_buffer(j, 1, &model, sizeof(SpriteModel));
-            sp->set_buffer(j, 2, &bone, sizeof(BoneBuffer));
-        }
+        // const auto sp = m_vis->get_sprite("back_drop");
+        // auto model = SpriteModel {
+        //     .model_matrix = scale(translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 10.0f)), glm::vec3(30.0f, 20.0f, 20.0f))
+        // };
+        // auto bone = BoneBuffer {
+        //     .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
+        // };
+        // for (size_t j = 0; j < m_image_count; j++) {
+        //     sp->set_buffer(j, 1, &model, sizeof(SpriteModel));
+        //     sp->set_buffer(j, 2, &bone, sizeof(BoneBuffer));
+        // }
     }
 
     void inter_frame() override {
@@ -143,7 +147,7 @@ public:
 
         // auto camera = m_vis->get_camera();
         // auto data = camera->get_data();
-        // data.view = glm::lookAt(glm::vec3(20 * glm::cos(2 * M_PI * m_frame / 1000), 20 * glm::sin(2 * M_PI * m_frame / 1000), 20.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+        // data.view = glm::lookAt(glm::vec3(5 * glm::cos(2 * M_PI * m_frame / 1000), 5 * glm::sin(2 * M_PI * m_frame / 1000), 5.0f * glm::cos(M_PI + 2 * M_PI * m_frame / 1000)), glm::vec3(0.0f, 0.0f, 0.0f),
         //                            glm::vec3(0.0f, 0.0f, 1.0f));
         // camera->set_data(data);
 
@@ -161,8 +165,8 @@ private:
     std::vector<float> m_bone_displacement;
     size_t m_frame = 0;
     size_t m_bar_count = 16;
-    float m_bars_width = 20;
-    float m_bar_margin = 0.2;
+    float m_bars_width = 6;
+    float m_bar_margin = 0.1 / 8;
 
     AudioRecord* m_audio_record;
 
@@ -176,17 +180,25 @@ int main() {
     printEnv("VK_ICD_FILENAMES");
     printEnv("VK_LAYER_PATH");
     printEnv("DYLD_LIBRARY_PATH");
-    auto vis = new Visual(1);
+    auto vis = new Visual(2);
+
+    // const Model model(Model::BAR);
+
+    // std::map<const char*, SpriteKind> sprite_load = {};
+    // sprite_load["main"] = BAR_SPRITE;
+    // vis->load_sprites(sprite_load);
+    // delete vis;
+    // return 0;
 
     auto camera = vis->get_camera();
     auto camera_data = camera->get_data();
-    camera_data.view = glm::lookAt(glm::vec3(0.0f, 20.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+    camera_data.view = glm::lookAt(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                    glm::vec3(0.0f, 0.0f, 1.0f));
     camera->set_data(camera_data);
 
     Application app(vis);
 
-    app.load_bars();
+    app.load_scene();
     app.start_audio_recording();
 
     try {

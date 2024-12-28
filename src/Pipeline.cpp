@@ -38,8 +38,8 @@ Pipeline::Pipeline(Spec &spec) : PipelineLayoutParent(spec.pipeline_layout), Ren
     VkPipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    auto binding_description = Vertex::get_binding_description();
-    auto attribute_descriptions = Vertex::get_attribute_descriptions();
+    auto binding_description = StandardVertex::get_binding_description();
+    auto attribute_descriptions = StandardVertex::get_attribute_descriptions();
 
     vertex_input_info.vertexBindingDescriptionCount = 1;
     vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
