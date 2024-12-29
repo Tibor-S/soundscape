@@ -1,5 +1,5 @@
 #version 450
-vec3 sun = normalize(vec3(0.5, 1.0, 2.0));
+vec3 sun = normalize(vec3(0, 1.0, 1.0));
 //vec3 view = normalize(vec3(0.0, 1.0, 0.0));
 float k_a = 0.1;
 float k_d = 0.9;

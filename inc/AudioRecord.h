@@ -110,6 +110,8 @@ private:
     std::mutex m_mutex;
 };
 
+typedef std::array<float, 3 * 5> joe_colors_t;
+
 class RecognizeSong {
 public:
     RecognizeSong() = default;
@@ -125,24 +127,60 @@ public:
         auto track = m_song_data["track"];
 
         std::optional<std::string> cover_art = std::nullopt;
+        std::optional<joe_colors_t> joe_color = std::nullopt;
         if (track.contains("images")) {
             if (const auto images = track["images"]; images.contains("coverart")) {
                 cover_art = images["coverart"].template get<std::string>();
+                auto joe_color_string = images["joecolor"].template get<std::string>();
+                joe_color = extract_joe_colors(joe_color_string);
+
             }
         }
+        m_joe_color = joe_color;
         m_cover_art = cover_art;
     }
 
     [[nodiscard]] std::optional<std::string> get_cover_art_url() const { return m_cover_art; }
+    [[nodiscard]] std::optional<joe_colors_t> get_joe_colors() const { return m_joe_color; }
 
 
 private:
     basic_json<> m_song_data = json::parse(R"({})");
     std::optional<std::string> m_cover_art;
+    std::optional<joe_colors_t> m_joe_color;
 
     void reset_fields() {
         m_song_data = json::parse(R"({})");
         m_cover_art = std::nullopt;
+    }
+
+    [[nodiscard]] static std::optional<joe_colors_t> extract_joe_colors(std::string& raw) {
+        if (raw.empty()) return std::nullopt;
+        joe_colors_t joe_colors {};
+
+        std::array<size_t, 5> hex_lengths {};
+        std::array<size_t, 5> hex_index {};
+        int ci = -1;
+        for (size_t i = 1; i < raw.size(); i++) { // i = 1, pass initial b identifier
+            if (raw[i] == ':') {
+                ci++;
+                hex_index[ci] = i + 1;
+            } else if (('0' <= raw[i] && raw[i] <= '9') || ('a' <= raw[i] && raw[i] <= 'f')) {
+                    hex_lengths[ci]++;
+            } // Ignore the others like p, s, t, q
+        }
+
+        for (size_t i = 0; i < 5; i++) {
+            for (size_t j = 0; j < 3; j++) {
+                auto begin = raw.begin() + hex_index[i] + j * 2;
+                const auto end = begin + 2;
+                auto hex_string = std::string(begin, end);
+                const auto value = strtoul(hex_string.c_str(), nullptr, 16);
+                joe_colors[3 * i + j] = static_cast<float>(value) / 256;
+            }
+        }
+
+        return joe_colors;
     }
 };
 
@@ -304,6 +342,7 @@ public:
         m_recognition_thread = nullptr;
     }
     [[nodiscard]] std::optional<std::string> cover_art_url() const { return get_cover_art_url(); }
+    [[nodiscard]] std::optional<joe_colors_t> joe_colors() const { return get_joe_colors(); }
 private:
     size_t m_sample_rate;
     size_t m_frame_size;

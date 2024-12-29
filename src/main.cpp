@@ -92,13 +92,6 @@ public:
             corner_colors.color[2] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
             corner_colors.color[3] = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
             corner_colors.color[4] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-            // std::vector<float> data = {
-            //     1, 0, 0, 1,
-            //     0, 0, 1, 1,
-            //     1, 0, 0, 1,
-            //     0, 0, 1, 1,
-            //     1, 1, 1, 1,
-            // };
             const auto sp = m_vis->get_sprite("back_drop");
             for (size_t j = 0; j < m_image_count; j++) {
                 sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
@@ -123,7 +116,7 @@ public:
         //
         if (m_frame % 100 == 0) {
             auto image_url = m_audio_record->cover_art_url();
-            if (image_url) {
+            if (image_url.has_value()) {
                 auto res_data = Communication::load_cover_art(image_url.value());
                 int w, h, c = 0;
                 uint8_t *pixel_data = stbi_load_from_memory(reinterpret_cast<stbi_uc const *>(res_data.c_str()),
@@ -135,13 +128,21 @@ public:
                     cover_art->set_image(j, 1, pixel_data, w * h * STBI_rgb_alpha);
                 }
                 stbi_image_free(pixel_data);
-                // stbi_load_from_file(m_cover_art_file, x, 0, );
             }
-        //     red_channel += 100;
-        // //     using namespace std;
-        // //     cout << "Trying to recognize" << endl;
-        // //     m_audio_record->start_recognition();
-        // //     // return;
+
+            auto joe_colors = m_audio_record->joe_colors();
+            if (joe_colors.has_value()) {
+                auto colors = joe_colors.value();
+                CornerColors corner_colors = {};
+                for (size_t i = 0; i < 5; i++)
+                    corner_colors.color[i] = glm::vec4(colors[3 * i], colors[3 * i + 1], colors[3 * i + 2], 1.0f);
+
+                const auto sp = m_vis->get_sprite("back_drop");
+                for (size_t j = 0; j < m_image_count; j++) {
+                    sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
+                }
+            }
+
         }
 
         const size_t first_frequency = 30;
