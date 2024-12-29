@@ -227,7 +227,7 @@ struct BarVertex {
 
         attribute_descriptions[3].binding = 0;
         attribute_descriptions[3].location = 3;
-        attribute_descriptions[3].format = VK_FORMAT_R32G32_SINT;
+        attribute_descriptions[3].format = VK_FORMAT_R32_SINT;
         attribute_descriptions[3].offset = offsetof(BarVertex, v_group);
 
         return attribute_descriptions;
@@ -239,7 +239,7 @@ template<> struct std::hash<BarVertex> {
         return ((hash<glm::vec3>()(vertex.pos) ^
             (hash<glm::vec3>()(vertex.color) << 1) >> 1) ^
                 (hash<glm::vec3>()(vertex.normal) << 1) >> 1) ^
-                    (hash<glm::int8>()(vertex.v_group) << 1);
+                    (hash<glm::int32>()(vertex.v_group) << 1);
     }
 };
 
@@ -293,6 +293,47 @@ template<> struct std::hash<BackDropVertex> {
         return ((hash<glm::vec3>()(vertex.pos) ^
                  (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
                (hash<glm::vec2>()(vertex.tex_coord) << 1);
+    }
+};
+
+struct CoverArtVertex {
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec2 tex_coord;
+
+
+    CoverArtVertex(): pos(), normal(), tex_coord() {}
+    explicit CoverArtVertex(const ObjVertex &src): pos(src.get_pos()), normal(src.get_normal()),
+                                                   tex_coord(src.get_tex_coord()) {}
+
+    static VkVertexInputBindingDescription get_binding_description() {
+        VkVertexInputBindingDescription binding_description{};
+        binding_description.binding = 0;
+        binding_description.stride = sizeof(CoverArtVertex);
+        binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return binding_description;
+    }
+
+    static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
+        std::vector<VkVertexInputAttributeDescription> attribute_descriptions(3);
+
+        attribute_descriptions[0].binding = 0;
+        attribute_descriptions[0].location = 0;
+        attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[0].offset = offsetof(CoverArtVertex, pos);
+
+        attribute_descriptions[1].binding = 0;
+        attribute_descriptions[1].location = 1;
+        attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attribute_descriptions[1].offset = offsetof(CoverArtVertex, normal);
+
+        attribute_descriptions[2].binding = 0;
+        attribute_descriptions[2].location = 2;
+        attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attribute_descriptions[2].offset = offsetof(CoverArtVertex, tex_coord);
+
+        return attribute_descriptions;
     }
 };
 

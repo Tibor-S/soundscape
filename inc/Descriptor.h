@@ -28,6 +28,7 @@ public:
         CAMERA_MODEL_SAMPLER,
         CAMERA_MODEL_BUFFER,
         BACK_DROP,
+        COVER_ART
     };
 
     explicit Descriptor2(Kind kind) {
@@ -60,6 +61,8 @@ public:
                 return BarVertex::get_binding_description();
             case BACK_DROP:
                 return BackDropVertex::get_binding_description();
+            case COVER_ART:
+                return CoverArtVertex::get_binding_description();
         }
 
         throw std::runtime_error("Invalid kind");
@@ -73,6 +76,8 @@ public:
                 return BarVertex::get_attribute_descriptions();
             case BACK_DROP:
                 return BackDropVertex::get_attribute_descriptions();
+            case COVER_ART:
+                return CoverArtVertex::get_attribute_descriptions();
         }
 
         throw std::runtime_error("Invalid kind");
@@ -91,7 +96,7 @@ private:
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_FRAGMENT_BIT,
                 };
-                return;
+                break;
             case CAMERA_MODEL_BUFFER:
                 m_bindings = {CAMERA, MODEL, UNIFORM_BUFFER};
                 m_shader_stages = {
@@ -99,16 +104,24 @@ private:
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_VERTEX_BIT,
                 };
-                return;
+                break;
             case BACK_DROP:
                 m_bindings = {CAMERA, UNIFORM_BUFFER};
                 m_shader_stages = {
                     VK_SHADER_STAGE_VERTEX_BIT,
-                    VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_FRAGMENT_BIT,
                 };
-                return;
+                break;
+            case COVER_ART:
+                m_bindings = {CAMERA, SAMPLER};
+                m_shader_stages = {
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_FRAGMENT_BIT,
+                };
+                break;
+            default:
+                throw std::invalid_argument("invalid kind");
         }
-        throw std::invalid_argument("invalid kind");
     }
 };
 

@@ -112,7 +112,7 @@ public:
 
     explicit UniformBufferManager(const std::shared_ptr<Device::Device>& device) : m_device(device) {}
 
-    [[nodiscard]] std::shared_ptr<UniformBuffer::UniformBuffer> acquire_buffer(Kind kind) {
+    [[nodiscard]] std::shared_ptr<UniformBuffer::UniformBuffer> acquire_buffer(const Kind kind) {
         switch (kind) {
             case CAMERA:
                 return acquire_camera();

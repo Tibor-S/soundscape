@@ -26,6 +26,7 @@ layout(location = 3) out vec3 viewDir;
 
 void main() {
     vec4 pos = ubo.proj * ubo.view * bon.bone[boneIndex] * pos.model * vec4(inPosition, 1.0);
+//    vec4 pos = ubo.proj * ubo.view * pos.model * vec4(inPosition, 1.0);
     gl_Position = pos;
     fragColor = inColor;
     fragNormal = inNormal;

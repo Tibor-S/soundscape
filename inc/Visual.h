@@ -17,6 +17,7 @@ enum SpriteKind {
     VIKING_ROOM,
     BAR_SPRITE,
     BACK_DROP_SPRITE,
+    COVER_ART_SPRITE
 };
 
 inline std::optional<Descriptor2::Kind> get_descriptor_kind(SpriteKind kind) {
@@ -24,9 +25,11 @@ inline std::optional<Descriptor2::Kind> get_descriptor_kind(SpriteKind kind) {
         case SpriteKind::VIKING_ROOM:
             return VikingRoom::descriptor_set_kind();
         case SpriteKind::BAR_SPRITE:
-            return BarSprite::descriptor_set_kind();;
+            return BarSprite::descriptor_set_kind();
         case SpriteKind::BACK_DROP_SPRITE:
             return BackDropSprite::descriptor_set_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::descriptor_set_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -38,6 +41,8 @@ inline std::optional<Pipeline2::Kind> get_pipeline_kind(SpriteKind kind) {
             return BarSprite::pipeline_kind();
         case SpriteKind::BACK_DROP_SPRITE:
             return BackDropSprite::pipeline_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::pipeline_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -49,17 +54,8 @@ inline std::optional<Model::Kind> get_model_kind(SpriteKind kind) {
             return BarSprite::model_kind();
         case SpriteKind::BACK_DROP_SPRITE:
             return BackDropSprite::model_kind();
-    }
-    throw std::invalid_argument("Invalid sprite kind");
-}
-inline std::optional<Texture::Kind> get_texture_kind(SpriteKind kind) {
-    switch (kind) {
-        case SpriteKind::VIKING_ROOM:
-            return VikingRoom::texture_kind();
-        case SpriteKind::BAR_SPRITE:
-            return BarSprite::texture_kind();
-        case SpriteKind::BACK_DROP_SPRITE:
-            return BackDropSprite::texture_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::model_kind();
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
@@ -76,9 +72,12 @@ inline Sprite3* construct_sprite(std::shared_ptr<Device::Device> &device, Textur
             descriptor_pool, image_count);
         case SpriteKind::BAR_SPRITE:
             return new BarSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
-                                  descriptor_pool, image_count);
+            descriptor_pool, image_count);
         case SpriteKind::BACK_DROP_SPRITE:
             return new BackDropSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+            descriptor_pool, image_count);
+        case SpriteKind::COVER_ART_SPRITE:
+            return new CoverArtSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
                                   descriptor_pool, image_count);
 
     }

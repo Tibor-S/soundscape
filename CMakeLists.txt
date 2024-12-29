@@ -32,7 +32,7 @@ include_directories(./inc)
 
 set(SOURCE_FILES
         src/Visual.cpp
-        src/vibra/communication/shazam.cpp
+        src/communication/shazam.cpp
 
         src/HelloTriangleApplication.cpp
         src/Device.cpp
@@ -60,6 +60,7 @@ set(SOURCE_FILES
         src/Command.cpp
         src/Format.cpp
         src/AudioRecord.cpp
+        src/communication/content_download.cpp
 )
 
 set(HEADER_FILES
@@ -97,6 +98,7 @@ set(HEADER_FILES
         inc/Texture.h
         inc/Descriptor.h
         inc/AudioRecord.h
+        inc/communication/content_download.h
 )
 
 # Add executable

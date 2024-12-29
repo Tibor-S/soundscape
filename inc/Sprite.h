@@ -182,7 +182,7 @@ public:
     }
 
     void set_descriptor_sets(std::shared_ptr<Device::Device>& device, TextureManager &texture_manager,
-            UniformBufferManager &uniform_buffer_manager,size_t image_count) {
+            UniformBufferManager &uniform_buffer_manager, size_t image_count) {
         for (size_t i = 0; i < image_count; i++) {
             auto descriptor_set = get_descriptor_set(i);
             auto updater = new DescriptorSetUpdater(descriptor_set);
@@ -215,9 +215,19 @@ public:
 
             for (const auto binding : m_image_bindings) {
                 auto kind = binding_image_kind(binding);
-                auto image = texture_manager.acquire_texture(kind);
-                textures.push_back(image);
-                updater->update_image(binding, *image);
+                if (kind == Texture::LOCAL) {
+                    const auto texture = new Texture(Texture::LOCAL, 400, 400, {255, 255, 255, 255});
+                    const auto texture_image = texture_manager.create_local_texture(texture);
+                    delete texture;
+                    textures.push_back(texture_image);
+                    updater->update_image(binding, *texture_image);
+                    // auto texture = new Texture(800, 800, )
+                    // auto texture_image = std::make_shared<TextureImage2>()
+                } else {
+                    auto image = texture_manager.acquire_texture(kind);
+                    textures.push_back(image);
+                    updater->update_image(binding, *image);
+                }
             }
 
             updater->finalize();
@@ -260,6 +270,10 @@ public:
         auto buffer = get_buffer(image_index, binding);
         buffer->update(data, size);
     }
+    void set_image(size_t image_index, size_t binding, uint8_t* pixel_data, size_t size) const {
+        auto image = get_image(image_index, binding);
+        image->update(pixel_data, size);
+    }
 
     void set_buffer_bindings(const std::vector<size_t>& bindings) {
         m_buffer_bindings.resize(bindings.size());
@@ -287,7 +301,6 @@ public:
             m_binding_image_kind[i] = bindings[i];
     }
     void set_model_kind(Model::Kind kind) { m_model_kind = kind; }
-    void set_texture_kind(Texture::Kind kind) { m_texture_kind = kind; }
     void set_pipeline_kind(Pipeline2::Kind kind) { m_pipeline_kind = kind; }
     void set_descriptor_set_kind(DescriptorSet::Kind kind) { m_descriptor_set_kind = kind; }
 private:
@@ -378,7 +391,6 @@ public:
     {
         set_binding_image_kind({Texture::VIKING_ROOM});
         set_model_kind(Model::VIKING_ROOM);
-        set_texture_kind(Texture::VIKING_ROOM);
         set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
     }
 
@@ -437,12 +449,19 @@ public:
     {
         set_binding_image_kind({Texture::TX_NULL});
         set_model_kind(Model::BAR);
-        set_texture_kind(Texture::TX_NULL);
         set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
     }
 
     [[nodiscard]] static std::optional<Model::Kind> model_kind() { return Model::BAR; }
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
+};
+
+struct CornerColors {
+    std::array<glm::vec4, 5> color;
+    // glm::vec3 bot_right;
+    // glm::vec3 top_left;
+    // glm::vec3 top_right;
+    // glm::vec3 front;
 };
 
 class BackDropSprite : public Sprite3 {
@@ -460,14 +479,13 @@ public:
         set_binding_buffer_kind({
             UniformBufferManager::CAMERA, UniformBufferManager::LOCAL
         });
-        set_binding_buffer_size({sizeof(Camera::Data), 4 * 3 * sizeof(float)});
-        set_binding_image_kind({Texture::TX_NULL});
+        set_binding_buffer_size({sizeof(Camera::Data), sizeof(CornerColors)});
+        set_binding_image_kind({});
+
         set_pipeline_kind(Pipeline2::BACK_DROP);
         set_descriptor_set_kind(Descriptor2::BACK_DROP);
-
-        set_binding_image_kind({Texture::TX_NULL});
         set_model_kind(Model::BACK_DROP);
-        set_texture_kind(Texture::TX_NULL);
+
         set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
     }
 
@@ -477,5 +495,37 @@ public:
     [[nodiscard]] static std::optional<Pipeline2::Kind> pipeline_kind() { return Pipeline2::BACK_DROP; }
     [[nodiscard]] static std::optional<DescriptorSet::Kind> descriptor_set_kind() { return Descriptor2::BACK_DROP; }
 };
+
+class CoverArtSprite : public Sprite3 {
+public:
+    CoverArtSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+               PipelineManager &pipeline_manager,
+               UniformBufferManager &uniform_buffer_manager,
+               std::shared_ptr<VertexBuffer2> &vertex_buffer,
+               std::shared_ptr<DescriptorPool> &descriptor_pool,
+               size_t image_count) : Sprite3(Pipeline2::COVER_ART, Model::COVER_ART, pipeline_manager, vertex_buffer, descriptor_pool,
+                                                              image_count)
+    {
+        set_buffer_bindings({0});
+        set_binding_buffer_size({sizeof(Camera::Data)});
+        set_binding_buffer_kind({
+            UniformBufferManager::CAMERA
+        });
+
+        set_image_bindings({1});
+        set_binding_image_kind({Texture::LOCAL});
+
+        set_descriptor_set_kind(Descriptor2::COVER_ART);
+        set_pipeline_kind(Pipeline2::COVER_ART);
+        set_model_kind(Model::COVER_ART);
+
+        set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
+    }
+
+    [[nodiscard]] static std::optional<Model::Kind> model_kind() { return Model::COVER_ART; }
+    [[nodiscard]] static std::optional<Pipeline2::Kind> pipeline_kind() { return Pipeline2::COVER_ART; }
+    [[nodiscard]] static std::optional<DescriptorSet::Kind> descriptor_set_kind() { return Descriptor2::COVER_ART; }
+};
+
 
 #endif //SPRITE_H

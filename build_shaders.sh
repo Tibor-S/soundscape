@@ -5,3 +5,5 @@ ${VULKAN_SDK}/bin/glslc shaders/bar.vert -o shaders/bar_vert.spv
 ${VULKAN_SDK}/bin/glslc shaders/bar.frag -o shaders/bar_frag.spv
 ${VULKAN_SDK}/bin/glslc shaders/backdrop.vert -o shaders/backdrop_vert.spv
 ${VULKAN_SDK}/bin/glslc shaders/backdrop.frag -o shaders/backdrop_frag.spv
+${VULKAN_SDK}/bin/glslc shaders/cover_art.vert -o shaders/cover_art_vert.spv
+${VULKAN_SDK}/bin/glslc shaders/cover_art.frag -o shaders/cover_art_frag.spv

@@ -5,8 +5,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <vulkan/vulkan.hpp>
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t WIDTH = 960;
+const uint32_t HEIGHT = 540;
 
 const std::string MODEL_PATH = "/Users/sebastian/CLionProjects/soundscape/models/viking_room.obj";
 const std::string TEXTURE_PATH = "/Users/sebastian/CLionProjects/soundscape/textures/viking_room.png";

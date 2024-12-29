@@ -50,7 +50,7 @@ private:
 };
 
 template <typename T>
-class LoadObjModel : public LoadModel {
+class LoadObjModel final : public LoadModel {
 public:
     explicit LoadObjModel(const char* obj_path) : LoadModel(sizeof(T)) {
         tinyobj::attrib_t attrib;
@@ -143,134 +143,13 @@ public:
     }
 };
 
-
-class LoadBarModel : public LoadModel {
-public:
-    LoadBarModel(double radius, double cylinder_height, size_t lat_res, size_t lon_res) : LoadModel(sizeof(BarVertex)) {
-        // std::unordered_map<BarVertex, size_t> unique_vertices;
-        // std::vector<BarVertex> vertices{};
-        // std::map<size_t, glm::vec3> normals;
-        //
-        // auto z_offset = cylinder_height / 2;
-        //
-        // auto float_lat_res = static_cast<double>(lat_res);
-        // auto float_lon_res = static_cast<double>(lon_res);
-        // for (size_t i = 0; i < lat_res + 1; i++) {
-        //     auto float_i_top = static_cast<double>(i);
-        //     auto float_i_bot = static_cast<double>(i + 1);
-        //
-        //     auto u_top_deg = M_PI / 2 + M_PI * float_i_top / float_lat_res;
-        //     auto u_bot_deg = M_PI / 2 + M_PI * float_i_bot / float_lat_res;
-        //
-        //     auto z_top = radius * glm::sin(u_top_deg);
-        //     auto z_bot = radius * glm::sin(u_bot_deg);
-        //
-        //     auto horizontal_radius_top = radius * glm::cos(u_top_deg);
-        //     auto horizontal_radius_bot = radius * glm::cos(u_bot_deg);
-        //
-        //     for (size_t j = 0; j < lon_res; j++) {
-        //         auto float_j_left = static_cast<double>(j);
-        //         auto float_j_right = static_cast<double>(j + 1);
-        //
-        //         auto v_left = 2 * M_PI * float_j_left / float_lon_res;
-        //         auto v_right = 2 * M_PI * float_j_right / float_lon_res;
-        //
-        //         auto color1 = glm::vec3(1.0, 1.0, 0.0);
-        //         auto color2 = glm::vec3(1.0, 1.0, 0.0);
-        //         auto color3 = glm::vec3(1.0, 1.0, 0.0);
-        //         auto color4 = glm::vec3(1.0, 1.0, 0.0);
-        //
-        //         auto x_top_left = horizontal_radius_top * glm::cos(v_left);
-        //         auto y_top_left = horizontal_radius_top * glm::sin(v_left);
-        //         auto z_top_left = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
-        //         auto pos_top_left = glm::vec3(x_top_left, y_top_left, z_top_left);
-        //
-        //         auto x_top_right = horizontal_radius_top * glm::cos(v_right);
-        //         auto y_top_right = horizontal_radius_top * glm::sin(v_right);
-        //         auto z_top_right = z_top > 0 ? z_offset + z_top : - z_offset + z_top;
-        //         auto pos_top_right = glm::vec3(x_top_right, y_top_right, z_top_right);
-        //
-        //         auto x_bot_left = horizontal_radius_bot * glm::cos(v_left);
-        //         auto y_bot_left = horizontal_radius_bot * glm::sin(v_left);
-        //         auto z_bot_left = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
-        //         auto pos_bot_left = glm::vec3(x_bot_left, y_bot_left, z_bot_left);
-        //
-        //         auto x_bot_right = horizontal_radius_bot * glm::cos(v_right);
-        //         auto y_bot_right = horizontal_radius_bot * glm::sin(v_right);
-        //         auto z_bot_right = z_bot > 0 ? z_offset + z_bot : - z_offset + z_bot;
-        //         auto pos_bot_right = glm::vec3(x_bot_right, y_bot_right, z_bot_right);
-        //
-        //         glm::int32 b_index_top =  z_top > 0 ? 0 : 1;
-        //         glm::int32 b_index_bot =  z_bot > 0 ? 0 : 1;
-        //
-        //         BarVertex vert_top_left = {.pos = pos_top_left, .color = color1, .v_groups = b_index_top};
-        //         BarVertex vert_top_right = {.pos = pos_top_right, .color = color2, .v_groups = b_index_top};
-        //         BarVertex vert_bot_left = {.pos = pos_bot_left, .color = color3, .v_groups = b_index_bot};
-        //         BarVertex vert_bot_right = {.pos = pos_bot_right, .color = color4, .v_groups = b_index_bot};
-        //
-        //         if (!unique_vertices.contains(vert_top_left)) {
-        //             unique_vertices[vert_top_left] = static_cast<uint32_t>(unique_vertices.size());
-        //             vertices.push_back(vert_top_left);
-        //         }
-        //         if (!unique_vertices.contains(vert_top_right)) {
-        //             unique_vertices[vert_top_right] = static_cast<uint32_t>(unique_vertices.size());
-        //             vertices.push_back(vert_top_right);
-        //         }
-        //         if (!unique_vertices.contains(vert_bot_left)) {
-        //             unique_vertices[vert_bot_left] = static_cast<uint32_t>(unique_vertices.size());
-        //             vertices.push_back(vert_bot_left);
-        //         }
-        //         if (!unique_vertices.contains(vert_bot_right)) {
-        //             unique_vertices[vert_bot_right] = static_cast<uint32_t>(unique_vertices.size());
-        //             vertices.push_back(vert_bot_right);
-        //         }
-        //
-        //         if (!normals.contains(unique_vertices[vert_top_left])) {
-        //             normals[unique_vertices[vert_top_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
-        //         }
-        //         if (!normals.contains(unique_vertices[vert_top_right])) {
-        //             normals[unique_vertices[vert_top_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
-        //         }
-        //         if (!normals.contains(unique_vertices[vert_bot_left])) {
-        //             normals[unique_vertices[vert_bot_left]] = glm::vec3(0.0f, 0.0f, 0.0f);
-        //         }
-        //         if (!normals.contains(unique_vertices[vert_bot_right])) {
-        //             normals[unique_vertices[vert_bot_right]] = glm::vec3(0.0f, 0.0f, 0.0f);
-        //         }
-        //
-        //         append_index(unique_vertices[vert_top_left]);
-        //         append_index(unique_vertices[vert_bot_left]);
-        //         append_index(unique_vertices[vert_bot_right]);
-        //
-        //         append_index(unique_vertices[vert_top_left]);
-        //         append_index(unique_vertices[vert_bot_right]);
-        //         append_index(unique_vertices[vert_top_right]);
-        //
-        //         auto face_left_normal = glm::cross(vert_bot_left.pos - vert_top_left.pos,
-        //                                            vert_bot_right.pos - vert_top_left.pos);
-        //         auto face_right_normal = glm::cross(vert_bot_right.pos - vert_top_left.pos,
-        //                                            vert_top_right.pos - vert_top_left.pos);
-        //
-        //         normals[unique_vertices[vert_top_left]] += face_left_normal + face_right_normal;
-        //         normals[unique_vertices[vert_top_right]] += face_right_normal;
-        //         normals[unique_vertices[vert_bot_left]] += face_left_normal;
-        //         normals[unique_vertices[vert_bot_right]] += face_left_normal + face_right_normal;
-        //     };
-        // }
-        //
-        // for (size_t i = 0; i < vertices.size(); i++) {
-        //     vertices[i].normal = normalize(normals[i]);
-        //     append_vertex(vertices[i]);
-        // }
-    }
-};
-
 class Model {
 public:
     enum Kind {
         VIKING_ROOM = 0,
         BAR,
-        BACK_DROP
+        BACK_DROP,
+        COVER_ART
     };
 
     explicit Model(const Kind kind) : m_loaded_model(load_model(kind)) {
@@ -286,17 +165,19 @@ private:
     Kind m_kind;
     LoadModel* m_loaded_model = nullptr;
 
-    static const char* get_obj_path(Kind kind) {
+    static const char* get_obj_path(const Kind kind) {
         switch (kind) {
             case VIKING_ROOM:
                 return MODEL_PATH.c_str();
+            case BAR:
+                return "/Users/sebastian/CLionProjects/soundscape/models/bar.obj";
             case BACK_DROP:
                 return "/Users/sebastian/CLionProjects/soundscape/models/backdrop.obj";
-            case BAR:
+            case COVER_ART:
+                return "/Users/sebastian/CLionProjects/soundscape/models/cover_art.obj";
             default:
-                return "/Users/sebastian/CLionProjects/soundscape/models/bar.obj";
+                throw std::runtime_error("Unknown model kind");
         }
-        throw std::runtime_error("Unknown model kind");
     }
 
     static LoadModel* load_model(Kind kind) {
@@ -304,10 +185,11 @@ private:
             case VIKING_ROOM:
                 return new LoadObjModel<StandardVertex>(get_obj_path(kind));
             case BAR:
-                return new LoadObjModel<BarVertex>(get_obj_path(kind));//new LoadBarModel(1, 1, 24, 24);
-                return new LoadBarModel(1, 1, 24, 24);
+                return new LoadObjModel<BarVertex>(get_obj_path(kind));
             case BACK_DROP:
                 return new LoadObjModel<BackDropVertex>(get_obj_path(kind));
+            case COVER_ART:
+                return new LoadObjModel<CoverArtVertex>(get_obj_path(kind));
         }
         throw std::runtime_error("Unknown model kind");
     }

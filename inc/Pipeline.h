@@ -41,20 +41,13 @@ private:
 VkShaderModule create_shader_module(Device::Device* device, const std::vector<char>& code);
 std::vector<char> read_file(const std::string& filename);
 
-
-// class PipelineLayout2 {
-// public:
-//     enum Kind {
-//
-//     };
-// };
-
 class Pipeline2 {
 public:
     enum Kind {
         STANDARD,
         BAR,
         BACK_DROP,
+        COVER_ART,
     };
 
     Pipeline2(std::shared_ptr<Device::Device> &device, std::shared_ptr<PipelineLayout2> &layout,
@@ -193,6 +186,8 @@ public:
                 return PipelineLayout2::CAMERA_MODEL_BUFFER;
             case BACK_DROP:
                 return PipelineLayout2::BACK_DROP;
+            case COVER_ART:
+                return PipelineLayout2::COVER_ART;
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -212,6 +207,8 @@ private:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_vert.spv";
             case BACK_DROP:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/backdrop_vert.spv";
+            case COVER_ART:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/cover_art_vert.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }
@@ -224,6 +221,8 @@ private:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/bar_frag.spv";
             case BACK_DROP:
                 return "/Users/sebastian/CLionProjects/soundscape/shaders/backdrop_frag.spv";
+            case COVER_ART:
+                return "/Users/sebastian/CLionProjects/soundscape/shaders/cover_art_frag.spv";
         }
         throw std::invalid_argument("Invalid kind");
     }

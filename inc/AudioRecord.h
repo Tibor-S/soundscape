@@ -19,6 +19,7 @@
 #include <vibra/communication/shazam.h>
 #include <fstream>
 #include <json.hpp>
+#include <communication/content_download.h>
 
 using namespace nlohmann;
 
@@ -302,6 +303,7 @@ public:
         delete m_recognition_thread;
         m_recognition_thread = nullptr;
     }
+    [[nodiscard]] std::optional<std::string> cover_art_url() const { return get_cover_art_url(); }
 private:
     size_t m_sample_rate;
     size_t m_frame_size;
@@ -451,6 +453,9 @@ private:
                 cout << "Fingerprint: " << fp->uri << endl;
                 recognize(fp);
                 cout << get_cover_art_url().value_or("No cover art") << endl;
+                // if (get_cover_art_url().has_value()) {
+                // Communication::cover_art("https://is1-ssl.mzstatic.com/image/thumb/Music117/v4/28/c6/34/28c63410-4520-f854-4c14-b584ec906965/cover.jpg/400x400cc.jpg");
+                // }
             }
 
             cout << "Sleeping loop" << endl;

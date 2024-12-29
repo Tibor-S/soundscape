@@ -1,3 +1,6 @@
+// Acquired from the Vibra repository: https://github.com/BayernMuller/vibra
+// Author: Jayden "BayernMuller" https://github.com/BayernMuller
+
 #include <vibra/communication/shazam.h>
 #include <curl/curl.h>
 #include <algorithm>

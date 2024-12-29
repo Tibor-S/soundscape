@@ -168,10 +168,10 @@ Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_
     auto camera = m_uniform_buffer_manager->acquire_camera();
     const auto width = static_cast<float>(m_render_target->get_swap_chain()->get_extent().width);
     const auto height = static_cast<float>(m_render_target->get_swap_chain()->get_extent().height);
-    auto proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 100.0f);
+    auto proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 1000.0f);
     proj[1][1] *= -1;
     camera->set_data({
-        .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .view = glm::lookAt(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         .proj = proj,
     });
 
