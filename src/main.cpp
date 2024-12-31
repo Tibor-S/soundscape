@@ -12,8 +12,11 @@
 #include <chrono>
 #include "HelloTriangleApplication.h"
 #include <cstdlib>
+#include <future>
 #include <Visual.h>
 #include <portaudio.h>
+#include <queue>
+#include <iostream>
 
 void printEnv(const char* var) {
     const char* value = std::getenv(var);
@@ -24,6 +27,426 @@ void printEnv(const char* var) {
     }
 }
 
+#define PALETTE_SIZE 5
+struct ColorPalette {
+    glm::vec3 dark;
+    glm::vec3 light;
+    glm::vec3 third;
+    glm::vec3 second;
+    glm::vec3 main;
+};
+
+struct ColorGroup {
+    glm::vec3 avg_color;
+    size_t count;
+
+};
+
+struct ColorGroupByCount : ColorGroup {
+    explicit ColorGroupByCount(const ColorGroup& group) : ColorGroup(group) {};
+    bool operator >(const ColorGroup& rhs) const {
+        return count > rhs.count;
+    }
+    bool operator <(const ColorGroup& rhs) const {
+        return count < rhs.count;
+    }
+};
+
+struct ColorGroupByLight : ColorGroup {
+    explicit ColorGroupByLight(const ColorGroup& group) : ColorGroup(group) {};
+    [[nodiscard]] float c_max() const {
+        return std::max({avg_color.r, avg_color.g, avg_color.b});
+    }
+    [[nodiscard]] float c_min() const {
+        return std::min({avg_color.r, avg_color.g, avg_color.b});
+    }
+    [[nodiscard]] float light() const {
+        return (c_max() + c_min()) / 2;
+    }
+    bool operator >(const ColorGroupByLight& rhs) const {
+        return light() > rhs.light();
+    }
+    bool operator <(const ColorGroupByLight& rhs) const {
+        return light() < rhs.light();
+    }
+};
+
+struct ColorGroupBySaturation : ColorGroupByLight {
+    explicit ColorGroupBySaturation(const ColorGroup& group) : ColorGroupByLight(group) {};
+    [[nodiscard]] float delta() const {
+        return c_max() - c_min();
+    }
+    [[nodiscard]] float saturation() const {
+        return delta() / (1 - abs(2 * light() - 1));
+
+    }
+    bool operator >(const ColorGroupBySaturation& rhs) const {
+        return saturation() > rhs.saturation();
+    }
+    bool operator <(const ColorGroupBySaturation& rhs) const {
+        return saturation() < rhs.saturation();
+    }
+};
+
+class CoverArt {
+public:
+    CoverArt() : m_cover_art_pixels(m_image_size) {}
+    explicit CoverArt(const size_t image_size) : m_image_size(image_size), m_cover_art_pixels(m_image_size) {}
+    ~CoverArt() {
+        if (m_reset_future_opt.has_value()) m_reset_future_opt.value().get();
+        if (m_load_future_opt.has_value()) m_load_future_opt.value().get();
+    };
+
+    [[nodiscard]] size_t image_size() const { return m_image_size; }
+    // Make sure dst_pixels is allocated with at least the size of the image
+
+    bool try_reset(const glm::vec3 color) {
+        using namespace std::chrono_literals;
+        if (m_reset_future_opt.has_value()) {
+            if (m_reset_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
+        }
+        m_reset_future_opt = std::async(std::launch::async, &CoverArt::reset_aux, this, color);
+        return true;
+    }
+    bool try_load(const std::string &url) {
+        using namespace std::chrono_literals;
+        if (m_load_future_opt.has_value()) {
+            if (m_load_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
+        }
+        m_load_future_opt = std::async(std::launch::async, &CoverArt::load_aux, this, url);
+        return true;
+        // m_load_thread = new std::thread(&CoverArt::load_aux, this, url);
+    }
+    bool try_approach(std::vector<uint8_t> &dst_pixels, ColorPalette &dst_palette,
+                                    const float factor = 0.1f)
+    {
+        if (!m_busy_mtx.try_lock()) return false;
+
+        for (size_t i = 0; i < m_image_size; i++) {
+            if (-1 <= (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) &&
+                (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) <= 1)
+            {
+                dst_pixels[i] = m_cover_art_pixels[i];
+                continue;
+            }
+            if (dst_pixels[i] != m_cover_art_pixels[i]) {
+                while (false) {}
+            }
+            const auto c_val = static_cast<float>(dst_pixels[i]);
+            const auto t_val = static_cast<float>(m_cover_art_pixels[i]);
+            auto n_val = static_cast<uint8_t>((1 - factor) * c_val + factor * t_val);
+            if (n_val == dst_pixels[i]) n_val = m_cover_art_pixels[i];
+            dst_pixels[i] = n_val;
+        }
+
+        dst_palette.dark = m_palette.dark * factor + dst_palette.dark * (1 - factor);
+        dst_palette.light = m_palette.light * factor + dst_palette.light * (1 - factor);
+        dst_palette.third = m_palette.third * factor + dst_palette.third * (1 - factor);
+        dst_palette.second = m_palette.second * factor + dst_palette.second * (1 - factor);
+        dst_palette.main = m_palette.main * factor + dst_palette.main * (1 - factor);
+
+        m_busy_mtx.unlock();
+
+        return true;
+    }
+
+    void set_default(std::vector<uint8_t> &dst_pixels, ColorPalette &dst_palette) const {
+        dst_pixels.resize(m_image_size);
+        for (size_t i = 0; i < m_image_size; i++) dst_pixels[i] = 255;
+        dst_palette.dark = glm::vec3(1.0f);
+        dst_palette.light = glm::vec3(1.0f);
+        dst_palette.third = glm::vec3(1.0f);
+        dst_palette.second = glm::vec3(1.0f);
+        dst_palette.main = glm::vec3(1.0f);
+    }
+
+private:
+    std::mutex m_busy_mtx;
+    size_t m_image_size = 400 * 400 * STBI_rgb_alpha;
+    std::vector<uint8_t> m_cover_art_pixels {};
+    ColorPalette m_palette = {
+        .dark = glm::vec3(1.0f),
+        .light = glm::vec3(1.0f),
+        .third = glm::vec3(1.0f),
+        .second = glm::vec3(1.0f),
+        .main = glm::vec3(1.0f),
+    };
+
+    // Threads
+    std::optional<std::future<void>> m_reset_future_opt {};
+    std::optional<std::future<void>> m_load_future_opt {};
+    // std::thread* m_reset_thread = nullptr;
+    // std::thread* m_load_thread = nullptr;
+
+    void reset_aux(const glm::vec3 color) {
+        std::lock_guard guard(m_busy_mtx);
+
+        for (int i = 0; i < m_image_size; i += 4) {
+            m_cover_art_pixels[i + 0] = static_cast<uint8_t>(color.r * 255);
+            m_cover_art_pixels[i + 1] = static_cast<uint8_t>(color.g * 255);
+            m_cover_art_pixels[i + 2] = static_cast<uint8_t>(color.b * 255);
+            m_cover_art_pixels[i + 3] = 255;
+        }
+        m_palette.dark = glm::vec3(1.0f);
+        m_palette.light = glm::vec3(1.0f);
+        m_palette.third = glm::vec3(1.0f);
+        m_palette.second = glm::vec3(1.0f);
+        m_palette.main = glm::vec3(1.0f);
+    }
+    void load_aux(const std::string &url) {
+        std::lock_guard guard(m_busy_mtx);
+
+        const auto res_data = Communication::load_cover_art(url);
+        int w, h, c = 0;
+        uint8_t *pixel_data = stbi_load_from_memory(reinterpret_cast<stbi_uc const *>(res_data.c_str()),
+                                                    static_cast<int>(res_data.size()), &w, &h, &c,
+                                                    STBI_rgb_alpha);
+        // NOTE: EVEN IF PIXEL DATA IS RGBA `c == STBI_rgb_alpha` IS NOT NECESSARILY TRUE?
+        // TODO: CHECK ACTUAL CHANNEL COUNT AND ADJUST FOR LOOP
+        const auto len = std::min(static_cast<int>(m_image_size), w * h * STBI_rgb_alpha);
+        memcpy(m_cover_art_pixels.data(), pixel_data, len);
+        // auto data_ptr = pixel_data;
+        // for (int i = 0; i < len; i++) {
+        //     if (i % 4 == 3 && *data_ptr != 0xFF) {
+        //         using namespace std;
+        //         cout << "\tWARNING" << endl;
+        //     }
+        //     m_cover_art_pixels[i] = *data_ptr++;
+        // }
+
+        stbi_image_free(pixel_data);
+
+        new_palette(m_cover_art_pixels, m_palette, 4);
+    }
+
+    static void new_palette(const std::vector<uint8_t> &pixels, ColorPalette &palette, uint8_t relevant_bits,
+                            const bool alpha_channel = true)
+    {
+        std::map<std::array<uint8_t, 3>, size_t> bin_count {};
+        std::map<std::array<uint8_t, 3>, glm::vec3> avg_color {};
+        const uint16_t manhattan_max = (1 << relevant_bits) + (1 << relevant_bits) + (1 << relevant_bits) - 3;
+        const uint16_t dl_manhattan_max = 1 << (relevant_bits - 1);
+        const size_t offset = alpha_channel ? 4 : 3;
+
+        std::array<uint8_t, 3> d_bin = {0,0,0};
+        size_t d_bin_count = 0;
+        std::array<uint8_t, 3> l_bin = {0,0,0};
+        size_t l_bin_count = 0;
+        std::array<uint8_t, 3> t_bin = {0,0,0};
+        size_t t_bin_count = 0;
+        std::array<uint8_t, 3> s_bin = {0,0,0};
+        size_t s_bin_count = 0;
+        std::array<uint8_t, 3> m_bin = {0,0,0};
+        size_t m_bin_count = 0;
+        for (size_t i = 0; i < pixels.size(); i += offset) {
+            const auto red = pixels[i+0]; // 0xFF
+            const auto green = pixels[i+1];
+            const auto blue = pixels[i+2];
+
+            const uint8_t red_bin = red >> (8 - relevant_bits);
+            const uint8_t green_bin = green >> (8 - relevant_bits);
+            const uint8_t blue_bin = blue >> (8 - relevant_bits);
+
+            const uint16_t d_manhattan = static_cast<uint16_t>(red_bin) +
+                                            static_cast<uint16_t>(green_bin) +
+                                            static_cast<uint16_t>(blue_bin);
+            const uint16_t l_manhattan = manhattan_max - d_manhattan;
+            const auto is_dark = d_manhattan <= dl_manhattan_max;
+            const auto is_light = l_manhattan <= dl_manhattan_max;
+
+            std::array bin = {red_bin, green_bin, blue_bin};
+
+            glm::vec3 color {};
+            color.r = static_cast<float>(red) / 255.0f;
+            color.g = static_cast<float>(green) / 255.0f;
+            color.b = static_cast<float>(blue) / 255.0f;
+
+            size_t current_bin_count = 0;
+            if (!bin_count.contains(bin)) {
+                bin_count[bin] = 1;
+                avg_color[bin] = color;
+                current_bin_count = 1;
+            } else {
+                auto old_color = avg_color[bin];
+                const auto new_count = bin_count[bin] + 1;
+                avg_color[bin] = (old_color * static_cast<float>(bin_count[bin]) + color)
+                                / static_cast<float>(new_count);
+                bin_count[bin] = new_count;
+                current_bin_count = new_count;
+            }
+
+            if (is_dark && current_bin_count > d_bin_count) {
+                d_bin_count = current_bin_count;
+                d_bin = bin;
+            } else if (is_light && current_bin_count > l_bin_count) {
+                l_bin_count = current_bin_count;
+                l_bin = bin;
+            } else if (current_bin_count > m_bin_count) {
+                if (m_bin != bin) {
+                    t_bin_count = s_bin_count;
+                    t_bin = s_bin;
+                    s_bin_count = m_bin_count;
+                    s_bin = m_bin;
+                    m_bin_count = current_bin_count;
+                    m_bin = bin;
+                } else {
+                    m_bin_count = current_bin_count;
+                }
+            } else if (current_bin_count > s_bin_count) {
+                if (s_bin != bin) {
+                    t_bin_count = s_bin_count;
+                    t_bin = s_bin;
+                    s_bin_count = current_bin_count;
+                    s_bin = bin;
+                } else {
+                    s_bin_count = current_bin_count;
+                }
+            } else if (current_bin_count > t_bin_count) {
+                t_bin_count = current_bin_count;
+                t_bin = bin;
+            }
+        }
+
+        // Make sure m and d have colors
+        if (d_bin_count == 0) d_bin = m_bin; // At least one of these must have a color
+        if (d_bin_count == 0) d_bin = l_bin; // At least one of these must have a color
+        if (m_bin_count == 0) m_bin = d_bin; // At least one of these must have a color
+
+        if (s_bin_count == 0) s_bin = m_bin;
+        if (t_bin_count == 0) t_bin = s_bin;
+        if (l_bin_count == 0) l_bin = t_bin;
+
+        palette.dark = avg_color[d_bin];
+        palette.light = avg_color[l_bin];
+        palette.third = avg_color[t_bin];
+        palette.second = avg_color[s_bin];
+        palette.main = avg_color[m_bin];
+    }
+
+    static void set_palette(const std::vector<uint8_t> &pixels, ColorPalette &palette, const float threshold = 0.15,
+                            const bool alpha_channel = true)
+    {
+        std::vector<ColorGroup> color_groups {};
+        const size_t offset = alpha_channel ? 4 : 3;
+
+        // Set groups
+        for (size_t i = 0; i < pixels.size(); i += offset) {
+            glm::vec3 pixel {};
+            pixel.r = static_cast<float>(pixels[i+0]) / 255.0f;
+            pixel.g = static_cast<float>(pixels[i+1]) / 255.0f;
+            pixel.b = static_cast<float>(pixels[i+2]) / 255.0f;
+
+            // Check if pixel fits into group
+            int group_index = -1;
+            float min_distance = threshold;
+            for (int j = 0; j < color_groups.size(); j++) {
+                float distance = glm::distance(pixel, color_groups[j].avg_color);
+                if (distance < min_distance) {
+                    min_distance = distance;
+                    group_index = j;
+                }
+            }
+
+            // New group
+            if (group_index == -1) {
+                using namespace std;
+                cout << "\tNEW COLOR: " << pixel.r << "\t" << pixel.g << "\t" << pixel.b << "\t" << endl;
+                color_groups.push_back(ColorGroup {
+                    .avg_color = pixel,
+                    .count = 1,
+                });
+                continue;
+            }
+
+            // Adjust group
+            auto color_group = color_groups[group_index];
+            size_t new_count = color_group.count + 1;
+            color_groups[group_index].avg_color =
+                    (static_cast<float>(color_group.count) * color_group.avg_color + pixel)
+                    / static_cast<float>(new_count);
+            color_groups[group_index].count = new_count;
+        }
+
+        // Pick most occurring groups
+        std::priority_queue<ColorGroupByCount, std::vector<ColorGroupByCount>, std::greater<>> palette_by_cnt {};
+        for (auto group : color_groups) {
+            palette_by_cnt.emplace(group);
+            if (palette_by_cnt.size() > PALETTE_SIZE) palette_by_cnt.pop();
+        }
+
+        // Sort by saturation
+        std::priority_queue<ColorGroupBySaturation, std::vector<ColorGroupBySaturation>, std::greater<>> palette_by_sat {};
+        for (; !palette_by_cnt.empty(); palette_by_cnt.pop())
+        {
+            palette_by_sat.emplace(palette_by_cnt.top());
+        }
+
+        // Set default in case palette_by_sat has size zero (just in case) or 1
+        palette.dark = palette_by_sat.top().avg_color;
+        palette.light = palette_by_sat.top().avg_color;
+        palette.third = palette_by_sat.top().avg_color;
+        palette.second = palette_by_sat.top().avg_color;
+        palette.main = palette_by_sat.top().avg_color;
+
+
+        std::vector<glm::vec3*> light_dst {};
+        std::vector<glm::vec3*> main_dst {};
+
+        if (palette_by_sat.size() == 1) {
+            using namespace std;
+            cout << "\tgroups: 1" << endl;
+            main_dst.push_back(&palette.dark);
+            main_dst.push_back(&palette.light);
+            main_dst.push_back(&palette.third);
+            main_dst.push_back(&palette.second);
+            main_dst.push_back(&palette.main);
+        } else if (palette_by_sat.size() == 2) {
+            using namespace std;
+            cout << "\tgroups: 2" << endl;
+            light_dst.push_back(&palette.dark);
+            main_dst.push_back(&palette.light);
+            main_dst.push_back(&palette.third);
+            main_dst.push_back(&palette.second);
+            main_dst.push_back(&palette.main);
+        } else if (palette_by_sat.size() >= 3) {
+            using namespace std;
+            cout << "\tgroups: " << palette_by_sat.size() << endl;
+            light_dst.push_back(&palette.dark);
+            light_dst.push_back(&palette.light);
+            main_dst.push_back(&palette.third);
+            main_dst.push_back(&palette.second);
+            main_dst.push_back(&palette.main);
+        }
+
+        // Sort least saturated by light
+        std::priority_queue<ColorGroupByLight, std::vector<ColorGroupByLight>, std::greater<>> low_palette_by_lgt {};
+        for (size_t i = 0; i < light_dst.size() && !palette_by_sat.empty(); i++)
+        {
+            low_palette_by_lgt.emplace(palette_by_sat.top());
+            if (palette_by_sat.size() > 1) palette_by_sat.pop();
+        }
+
+        // Pick dark and light
+        for (size_t i = 0; i < light_dst.size() && !low_palette_by_lgt.empty(); i++) {
+            *(light_dst[i]) = low_palette_by_lgt.top().avg_color;
+            if (low_palette_by_lgt.size() > 1) low_palette_by_lgt.pop();
+        }
+
+        // Sort rest by count
+        std::priority_queue<ColorGroupByCount, std::vector<ColorGroupByCount>, std::greater<>> main_palette_by_cnt {};
+        for (size_t i = 0; i < main_dst.size() && !palette_by_sat.empty(); i++)
+        {
+            main_palette_by_cnt.emplace(palette_by_sat.top());
+            if (palette_by_sat.size() > 1) palette_by_sat.pop();
+        }
+
+        // Pick main, second and third
+        for (size_t i = 0; i < main_dst.size() && !main_palette_by_cnt.empty(); i++) {
+            *(main_dst[i]) = main_palette_by_cnt.top().avg_color;
+            if (main_palette_by_cnt.size() > 1) main_palette_by_cnt.pop();
+        }
+    }
+};
 
 class Application : public InterFrame {
 public:
@@ -41,6 +464,8 @@ public:
 
 
         m_audio_record->start_recognition();
+
+        m_cover_art.set_default(m_cover_art_pixels, m_palette);
     }
     ~Application() override {
         delete m_audio_record;
@@ -113,37 +538,47 @@ public:
     void inter_frame() override {
         // static uint8_t red_channel = 0;
         m_frame += 1;
-        //
-        if (m_frame % 100 == 0) {
-            auto image_url = m_audio_record->cover_art_url();
-            if (image_url.has_value()) {
-                auto res_data = Communication::load_cover_art(image_url.value());
-                int w, h, c = 0;
-                uint8_t *pixel_data = stbi_load_from_memory(reinterpret_cast<stbi_uc const *>(res_data.c_str()),
-                                                            static_cast<int>(res_data.size()), &w, &h, &c,
-                                                            STBI_rgb_alpha);
-
-                auto cover_art = m_vis->get_sprite("cover_art");
-                for (size_t j = 0; j < m_image_count; j++) {
-                    cover_art->set_image(j, 1, pixel_data, w * h * STBI_rgb_alpha);
-                }
-                stbi_image_free(pixel_data);
+        auto image_url_opt = m_audio_record->cover_art_url();
+        if (image_url_opt != m_last_cover_art) {
+            m_last_cover_art = image_url_opt;
+            using namespace std;
+            cout << "new url" << endl;
+            if (image_url_opt.has_value()) {
+                m_cover_art.try_load(image_url_opt.value());
+            } else {
+                m_cover_art.try_reset(glm::vec3(1.0f));
             }
-
-            auto joe_colors = m_audio_record->joe_colors();
-            if (joe_colors.has_value()) {
-                auto colors = joe_colors.value();
-                CornerColors corner_colors = {};
-                for (size_t i = 0; i < 5; i++)
-                    corner_colors.color[i] = glm::vec4(colors[3 * i], colors[3 * i + 1], colors[3 * i + 2], 1.0f);
-
-                const auto sp = m_vis->get_sprite("back_drop");
-                for (size_t j = 0; j < m_image_count; j++) {
-                    sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
-                }
-            }
-
         }
+        m_cover_art.try_approach(m_cover_art_pixels, m_palette);
+        const auto cover_art = m_vis->get_sprite("cover_art");
+        for (size_t j = 0; j < m_image_count; j++) {
+            cover_art->set_image(j, 1, m_cover_art_pixels.data(), m_cover_art.image_size());
+        }
+
+        CornerColors corner_colors = {
+            glm::vec4(m_palette.main, 1.0),
+            glm::vec4(m_palette.second, 1.0),
+            glm::vec4(m_palette.third, 1.0),
+            glm::vec4(m_palette.light, 1.0),
+            glm::vec4(m_palette.dark, 1.0),
+        };
+        const auto sp = m_vis->get_sprite("back_drop");
+        for (size_t j = 0; j < m_image_count; j++) {
+            sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
+        }
+        // auto pixels_opt = m_cover_art.try_get_cover_art_pixels();
+        // if (pixels_opt.has_value()) {
+        //     // TODO: COPIES VECTOR
+        //     auto pixels = pixels_opt.value();
+        //     const auto cover_art = m_vis->get_sprite("cover_art");
+        //     for (size_t j = 0; j < m_image_count; j++) {
+        //         cover_art->set_image(j, 1, pixels.data(), pixels.size());
+        //     }
+        // }
+        //
+        // auto palette_opt = m_cover_art.try_get_palette();
+        // if (palette_opt.has_value()) {}
+        // m_cover_art.tr();
 
         const size_t first_frequency = 30;
         const size_t last_frequency = 4000;
@@ -193,14 +628,15 @@ public:
 
         // auto camera = m_vis->get_camera();
         // auto data = camera->get_data();
-        // data.view = glm::lookAt(glm::vec3(5 * glm::cos(2 * M_PI * m_frame / 1000), 5 * glm::sin(2 * M_PI * m_frame / 1000), 5.0f * glm::cos(M_PI + 2 * M_PI * m_frame / 1000)), glm::vec3(0.0f, 0.0f, 0.0f),
+        // data.view = glm::lookAt(
+        //     glm::vec3(5 * glm::cos(2 * M_PI * m_frame / 1000), 5 * glm::sin(2 * M_PI * m_frame / 1000),
+        //               5.0f * glm::cos(M_PI + 2 * M_PI * m_frame / 1000)), glm::vec3(0.0f, 0.0f, 0.0f),
         //                            glm::vec3(0.0f, 0.0f, 1.0f));
         // camera->set_data(data);
 
 
-        while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_last_frame).
-               count() < 1000 / m_frame_rate) {
-        }
+        while (std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - m_last_frame).count() < 1000 / m_frame_rate) {}
         m_last_frame = std::chrono::steady_clock::now();
     }
 
@@ -217,6 +653,12 @@ private:
     std::vector<float> m_amplitude;
 
     AudioRecord* m_audio_record;
+    std::optional<std::string> m_last_cover_art = std::nullopt;
+
+    CoverArt m_cover_art = CoverArt(400 * 400 * STBI_rgb_alpha);
+    std::vector<uint8_t> m_cover_art_pixels {};
+    ColorPalette m_palette {};
+
 
     size_t m_frame_rate = 60;
     std::chrono::time_point<std::chrono::steady_clock> m_last_frame;
