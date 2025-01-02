@@ -4,14 +4,13 @@
 
 #ifndef VISUAL_H
 #define VISUAL_H
+
 #include <iostream>
 #include <map>
+
 #include <Model.h>
 #include <Sprite.h>
 #include <Texture.h>
-#include <unordered_set>
-
-// namespace Visual {
 
 enum SpriteKind {
     VIKING_ROOM,
@@ -94,7 +93,7 @@ public:
 
 class Visual {
 public:
-    Visual(size_t max_frames_in_flight);
+    explicit Visual(size_t max_frames_in_flight);
     ~Visual() {
         for (size_t i = 0; i < m_max_frames_in_flight; i++) {
             vkDestroySemaphore(m_device->logical_device_handle(), m_render_finished_semaphores[i], nullptr);
@@ -251,8 +250,5 @@ private:
         camera->set_data(data);
     }
 };
-
-
-// } // Visual
 
 #endif //VISUAL_H

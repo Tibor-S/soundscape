@@ -2,9 +2,10 @@
 // Created by Sebastian Sandstig on 2024-11-29.
 //
 
+#include <Globals.h>
 #include <Device.h>
-#include <HelloTriangleApplication.h>
 
+// #include <Globals.h>
 #include <Queue.h>
 #include <set>
 #include <SwapChainSupport.h>

@@ -4,22 +4,22 @@
 
 #ifndef AUDIORECORD_H
 #define AUDIORECORD_H
-#include <fstream>
-#include <iostream>
-#include <portaudio.h>
-#include <thread>
-#include <vector>
-#include <string.h>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
+
+#include <fstream>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+#include <json.hpp>
+#include <portaudio.h>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
+#include <glm/vec4.hpp>
 #include <vibra/vibra.h>
 #include <vibra/communication/shazam.h>
-#include <fstream>
-#include <json.hpp>
-#include <communication/content_download.h>
 
 using namespace nlohmann;
 

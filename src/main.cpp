@@ -8,15 +8,19 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+
 #include <iostream>
 #include <chrono>
-#include "HelloTriangleApplication.h"
+// #include "HelloTriangleApplication.h"
 #include <cstdlib>
 #include <future>
 #include <Visual.h>
 #include <portaudio.h>
 #include <queue>
 #include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#include <communication/content_download.h>
 
 void printEnv(const char* var) {
     const char* value = std::getenv(var);

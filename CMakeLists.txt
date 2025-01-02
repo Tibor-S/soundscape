@@ -34,7 +34,6 @@ set(SOURCE_FILES
         src/Visual.cpp
         src/communication/shazam.cpp
 
-        src/HelloTriangleApplication.cpp
         src/Device.cpp
         src/Image.cpp
         src/SamplerImage.cpp
@@ -53,7 +52,6 @@ set(SOURCE_FILES
         src/Sprite.cpp
 
         src/DescriptorManager.cpp
-#        src/CommandManager.cpp
 
         src/Queue.cpp
         src/Memory.cpp
@@ -61,12 +59,12 @@ set(SOURCE_FILES
         src/Format.cpp
         src/AudioRecord.cpp
         src/communication/content_download.cpp
+        src/Model.cpp
 )
 
 set(HEADER_FILES
         inc/Visual.h
 
-        inc/HelloTriangleApplication.h
         inc/Device.h
         inc/Image.h
         inc/SamplerImage.h
