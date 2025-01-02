@@ -5,7 +5,7 @@
 #include <Command.h>
 
 namespace Command {
-VkCommandBuffer begin_single_time_command(Device::Device* device, VkCommandPool command_pool_handle) {
+VkCommandBuffer begin_single_time_command(Device* device, VkCommandPool command_pool_handle) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -24,7 +24,7 @@ VkCommandBuffer begin_single_time_command(Device::Device* device, VkCommandPool 
     return commandBuffer;
 }
 
-void end_single_time_command(Device::Device *device, VkCommandPool command_pool_handle,
+void end_single_time_command(Device *device, VkCommandPool command_pool_handle,
                              VkCommandBuffer command_buffer_handle) {
     vkEndCommandBuffer(command_buffer_handle);
 
@@ -34,7 +34,7 @@ void end_single_time_command(Device::Device *device, VkCommandPool command_pool_
     submitInfo.pCommandBuffers = &command_buffer_handle;
 
     // VkQueue
-    VkQueue graphics_queue = device->queue(Queue::GRAPHICS).value();
+    VkQueue graphics_queue = device->queue(GRAPHICS).value();
     vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(graphics_queue);
 

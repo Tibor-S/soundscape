@@ -10,7 +10,7 @@ namespace SwapChain {
 SwapChain::SwapChain(Spec& spec) : DeviceParent(spec.device) {
     m_window = spec.window;
     m_surface_handle = spec.surface_handle;
-    auto swap_chain_support = spec.device->get_swap_chain_support(m_surface_handle);
+    auto swap_chain_support = spec.device->swap_chain_support(m_surface_handle);
     m_surface_format = choose_swap_surface_format(swap_chain_support.formats);
     m_extent = choose_swap_extent(swap_chain_support.capabilities, m_window);
     VkPresentModeKHR present_mode = choose_swap_present_mode(swap_chain_support.presentModes);
@@ -35,8 +35,8 @@ SwapChain::~SwapChain() {
 }
 
 
-VkSwapchainKHR SwapChain::create_swap_chain(Device::Device *device, VkSurfaceKHR surface_handle, GLFWwindow *window,
-                                           SwapChainSupport::SwapChainSupportDetails *swap_chain_support,
+VkSwapchainKHR SwapChain::create_swap_chain(Device *device, VkSurfaceKHR surface_handle, GLFWwindow *window,
+                                           SwapChainSupportDetails *swap_chain_support,
                                            VkSurfaceFormatKHR *surface_format, VkExtent2D *extent,
                                            VkPresentModeKHR present_mode, size_t max_image_count)
 {
@@ -59,8 +59,8 @@ VkSwapchainKHR SwapChain::create_swap_chain(Device::Device *device, VkSurfaceKHR
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    uint32_t graphics_queue = device->queue_index(Queue::GRAPHICS).value();
-    uint32_t presentation_queue = device->queue_index(Queue::PRESENTATION).value();
+    uint32_t graphics_queue = device->queue_index(GRAPHICS).value();
+    uint32_t presentation_queue = device->queue_index(PRESENTATION).value();
     uint32_t queueFamilyIndices[] = {
         graphics_queue,
         presentation_queue};
@@ -165,11 +165,11 @@ VkExtent2D SwapChain::choose_swap_extent(VkSurfaceCapabilitiesKHR& capabilities,
     }
 }
 
-Image::Image *SwapChain::create_color_image(Device::Device *device, VkSurfaceFormatKHR surface_format,
+Image *SwapChain::create_color_image(Device *device, VkSurfaceFormatKHR surface_format,
                                             VkExtent2D extent) {
     // VkFormat colorFormat = m_surface_format.format;
 
-    Image::Spec spec = {};
+    ImageSpec spec = {};
     spec.device = device;
     spec.width = extent.width;
     spec.height = extent.height;
@@ -180,7 +180,7 @@ Image::Image *SwapChain::create_color_image(Device::Device *device, VkSurfaceFor
     spec.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     spec.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     spec.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
-    return new Image::Image(spec);
+    return new Image(spec);
 }
 
 VkFormat SwapChain::find_depth_format() {
@@ -192,8 +192,8 @@ VkFormat SwapChain::find_depth_format() {
     );
 }
 
-Image::Image* SwapChain::create_depth_image(Device::Device* device, VkFormat depth_format, VkExtent2D extent) {
-    Image::Spec spec = {};
+Image* SwapChain::create_depth_image(Device* device, VkFormat depth_format, VkExtent2D extent) {
+    ImageSpec spec = {};
     spec.device = device;
     spec.width = extent.width;
     spec.height = extent.height;
@@ -204,7 +204,7 @@ Image::Image* SwapChain::create_depth_image(Device::Device* device, VkFormat dep
     spec.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     spec.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     spec.aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT;
-    return new Image::Image(spec);
+    return new Image(spec);
 }
 
 } // SwapChain

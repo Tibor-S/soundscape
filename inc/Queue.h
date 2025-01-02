@@ -4,16 +4,15 @@
 
 #ifndef QUEUE_H
 #define QUEUE_H
+
 #include <vulkan/vulkan.hpp>
 
-namespace Queue {
-
-enum Type {
+enum QueueType {
     GRAPHICS,
     PRESENTATION
 };
 
-struct FamilyIndices {
+struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
 
@@ -24,7 +23,6 @@ struct FamilyIndices {
     }
 };
 
-FamilyIndices find_families(VkPhysicalDevice physical_device, std::optional<VkSurfaceKHR> surface);
+QueueFamilyIndices find_families(VkPhysicalDevice physical_device, std::optional<VkSurfaceKHR> surface);
 
-}
 #endif //QUEUE_H

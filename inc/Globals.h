@@ -5,13 +5,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <vulkan/vulkan.hpp>
-const uint32_t WIDTH = 960;
-const uint32_t HEIGHT = 540;
-
-const std::string MODEL_PATH = "/Users/sebastian/CLionProjects/soundscape/models/viking_room.obj";
-const std::string TEXTURE_PATH = "/Users/sebastian/CLionProjects/soundscape/textures/viking_room.png";
-
-const int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr uint32_t WIDTH = 960;
+constexpr uint32_t HEIGHT = 540;
 
 const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
@@ -24,8 +19,9 @@ const std::vector<const char*> deviceExtensions = {
 const bool enable_validation_layers = false;
 #else
 const bool enable_validation_layers = true;
+#endif
 
-
+// TODO: NO!
 constexpr size_t MAX_BAR_COUNT = 200;
 inline const char* BAR_NAMES[MAX_BAR_COUNT] = {
     "bar000",
@@ -230,5 +226,4 @@ inline const char* BAR_NAMES[MAX_BAR_COUNT] = {
     "bar199",
 };
 
-#endif
 #endif //GLOBALS_H

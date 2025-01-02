@@ -7,9 +7,7 @@
 #include <Image.h>
 #include <Memory.h>
 
-namespace Image {
-
-Image::Image(const Spec &spec) {
+Image::Image(const ImageSpec &spec) {
     m_device = spec.device;
     m_width = spec.width;
     m_height = spec.height;
@@ -19,11 +17,13 @@ Image::Image(const Spec &spec) {
     m_usage = spec.usage;
     m_aspect_flags = spec.aspect_flags;
     m_properties = spec.properties;
-    m_mip_levels = spec.mip_levels.value_or(static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1);
-    // m_mip_levels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
-    m_image_handle = create_image(m_device->logical_device_handle(), m_width, m_height,  m_mip_levels, m_format, m_tiling, m_usage, m_num_samples);
+    m_mip_levels = spec.mip_levels.value_or(
+        static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1);
+    m_image_handle = create_image(m_device->logical_device_handle(), m_width, m_height, m_mip_levels, m_format,
+                                  m_tiling, m_usage, m_num_samples);
     m_memory = bind_image_memory(m_device, m_image_handle, m_properties);
-    m_view_handle = create_view(m_device->logical_device_handle(), m_image_handle, m_format, m_aspect_flags, m_mip_levels);
+    m_view_handle = create_view(m_device->logical_device_handle(), m_image_handle, m_format, m_aspect_flags,
+                                m_mip_levels);
 }
 
 Image::~Image() {
@@ -33,7 +33,7 @@ Image::~Image() {
 }
 
 
-void Image::generate_mipmaps(VkCommandPool command_pool_handle) {
+void Image::generate_mipmaps(VkCommandPool command_pool_handle) const {
     // Check if image format supports linear blitting
     VkFormatProperties format_properties;
     vkGetPhysicalDeviceFormatProperties(m_device->physical_device_handle(), m_format, &format_properties);
@@ -54,8 +54,8 @@ void Image::generate_mipmaps(VkCommandPool command_pool_handle) {
     barrier.subresourceRange.layerCount = 1;
     barrier.subresourceRange.levelCount = 1;
 
-    int32_t mip_width = static_cast<int32_t>(m_width);
-    int32_t mip_height = static_cast<int32_t>(m_height);
+    auto mip_width = static_cast<int32_t>(m_width);
+    auto mip_height = static_cast<int32_t>(m_height);
 
     for (uint32_t i = 1; i < m_mip_levels; i++) {
         barrier.subresourceRange.baseMipLevel = i - 1;
@@ -120,7 +120,8 @@ void Image::generate_mipmaps(VkCommandPool command_pool_handle) {
     Command::end_single_time_command(m_device, command_pool_handle, command_buffer_handle);
 }
 
-void Image::transition_layout(VkCommandPool command_pool_handle ,VkImageLayout old_layout, VkImageLayout new_layout) const {
+void Image::transition_layout(VkCommandPool command_pool_handle, VkImageLayout old_layout,
+                              VkImageLayout new_layout) const {
     VkCommandBuffer command_buffer_handle = Command::begin_single_time_command(m_device, command_pool_handle);
 
     VkImageMemoryBarrier barrier{};
@@ -155,15 +156,18 @@ void Image::transition_layout(VkCommandPool command_pool_handle ,VkImageLayout o
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout ==
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    } else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout ==
+               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -213,7 +217,7 @@ void Image::copy_buffer_to_image(VkCommandPool command_pool_handle, VkBuffer buf
     Command::end_single_time_command(m_device, command_pool_handle, command_buffer_handle);
 }
 
-Device::Device *Image::get_device() const {
+Device *Image::get_device() const {
     return m_device;
 }
 
@@ -228,14 +232,6 @@ VkImage Image::get_image() const {
 VkImageView Image::get_image_view() const {
     return m_view_handle;
 }
-
-// void Image::destroy() {
-//     vkDestroyImageView(m_device->logical_device_handle(), m_view_handle, nullptr);
-//     vkDestroyImage(m_device->logical_device_handle(), m_image_handle, nullptr);
-//     vkFreeMemory(m_device->logical_device_handle(), m_memory, nullptr);
-// }
-
-// Private
 
 VkImage Image::create_image(VkDevice device_handle, uint32_t width, uint32_t height, uint32_t mip_levels,
                             VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
@@ -285,7 +281,7 @@ VkImageView Image::create_view(VkDevice device_handle, VkImage handle, VkFormat 
 
 }
 
-VkDeviceMemory Image::bind_image_memory(Device::Device* device, VkImage handle, VkMemoryPropertyFlags properties) {
+VkDeviceMemory Image::bind_image_memory(Device* device, VkImage handle, VkMemoryPropertyFlags properties) {
     VkDeviceMemory memory_handle;
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device->logical_device_handle(), handle, &memRequirements);
@@ -306,6 +302,4 @@ VkDeviceMemory Image::bind_image_memory(Device::Device* device, VkImage handle, 
 
 bool Image::has_stencil_component(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
 }

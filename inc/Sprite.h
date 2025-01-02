@@ -181,7 +181,7 @@ public:
         m_vertex_buffer_position = m_vertex_buffer->get_model_position(model_kind);
     }
 
-    void set_descriptor_sets(std::shared_ptr<Device::Device>& device, TextureManager &texture_manager,
+    void set_descriptor_sets(std::shared_ptr<Device>& device, TextureManager &texture_manager,
             UniformBufferManager &uniform_buffer_manager, size_t image_count) {
         for (size_t i = 0; i < image_count; i++) {
             auto descriptor_set = get_descriptor_set(i);
@@ -381,7 +381,7 @@ public:
 
 class VikingRoom : public CameraModelSamplerSprite {
 public:
-    VikingRoom(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+    VikingRoom(std::shared_ptr<Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,
@@ -439,7 +439,7 @@ public:
 
 class BarSprite : public CameraModelBufferSprite {
 public:
-    BarSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+    BarSprite(std::shared_ptr<Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,
@@ -466,7 +466,7 @@ struct CornerColors {
 
 class BackDropSprite : public Sprite3 {
 public:
-    BackDropSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+    BackDropSprite(std::shared_ptr<Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,
@@ -498,7 +498,7 @@ public:
 
 class CoverArtSprite : public Sprite3 {
 public:
-    CoverArtSprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+    CoverArtSprite(std::shared_ptr<Device> &device, TextureManager &texture_manager,
                PipelineManager &pipeline_manager,
                UniformBufferManager &uniform_buffer_manager,
                std::shared_ptr<VertexBuffer2> &vertex_buffer,

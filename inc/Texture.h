@@ -4,10 +4,12 @@
 
 #ifndef TEXTURE_H
 #define TEXTURE_H
+
+#include <stb_image.h>
+
 #include <Globals.h>
 #include <SamplerImage.h>
 #include <StagingBuffer.h>
-#include <stb_image.h>
 
 class LoadImage {
 public:
@@ -107,7 +109,7 @@ private:
     static const char* get_texture_path(Kind kind) {
         switch (kind) {
             case VIKING_ROOM:
-                return TEXTURE_PATH.c_str();
+                return "/Users/sebastian/CLionProjects/soundscape/textures/viking_room.png";
             case TX_NULL:
             default:
                 return "/Users/sebastian/CLionProjects/soundscape/textures/texture.jpg";
@@ -152,18 +154,18 @@ private:
     }
 };
 
-class TextureImage2 : public SamplerImage::SamplerImage {
+class TextureImage2 : public SamplerImage {
 public:
     explicit
-    TextureImage2(std::shared_ptr<Device::Device> &device, VkCommandPool command_pool, Texture* texture) : SamplerImage(
+    TextureImage2(std::shared_ptr<Device> &device, VkCommandPool command_pool, Texture* texture) : SamplerImage(
         get_sampler_spec(device.get(), texture))
     {
         m_command_pool = command_pool;
-        StagingBuffer::Spec staging_buffer_spec = {};
+        StagingBufferSpec staging_buffer_spec = {};
         staging_buffer_spec.device = get_device();
         staging_buffer_spec.data = texture->get_pixels();
         staging_buffer_spec.size = texture->get_image_size();
-        auto staging_buffer = new StagingBuffer::StagingBuffer(staging_buffer_spec);
+        auto staging_buffer = new StagingBuffer(staging_buffer_spec);
 
         transition_layout(m_command_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         copy_buffer_to_image(m_command_pool, staging_buffer->get_handle());
@@ -174,11 +176,11 @@ public:
     ~TextureImage2() = default;
 
     void update(uint8_t* pixel_data, size_t size) {
-        StagingBuffer::Spec staging_buffer_spec = {};
+        StagingBufferSpec staging_buffer_spec = {};
         staging_buffer_spec.device = get_device();
         staging_buffer_spec.data = pixel_data;
         staging_buffer_spec.size = size;
-        auto staging_buffer = new StagingBuffer::StagingBuffer(staging_buffer_spec);
+        auto staging_buffer = new StagingBuffer(staging_buffer_spec);
 
         transition_layout(m_command_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         copy_buffer_to_image(m_command_pool, staging_buffer->get_handle());
@@ -189,8 +191,8 @@ public:
 private:
     VkCommandPool m_command_pool;
 
-    static ::SamplerImage::Spec get_sampler_spec(Device::Device* device, const Texture* texture) {
-        ::SamplerImage::Spec sampler_image_spec = {};
+    static SamplerImageSpec get_sampler_spec(Device* device, const Texture* texture) {
+        SamplerImageSpec sampler_image_spec = {};
         sampler_image_spec.device = device;
         sampler_image_spec.width = texture->get_width();
         sampler_image_spec.height = texture->get_height();
@@ -217,7 +219,7 @@ private:
 
 class TextureManager {
 public:
-    TextureManager(const std::shared_ptr<Device::Device> &device, VkCommandPool command_pool) : m_device(device),
+    TextureManager(const std::shared_ptr<Device> &device, VkCommandPool command_pool) : m_device(device),
         m_command_pool(command_pool) {}
 
     [[nodiscard]] std::shared_ptr<TextureImage2> acquire_texture(const Texture::Kind kind) {
@@ -239,7 +241,7 @@ public:
         return std::make_shared<TextureImage2>(m_device, m_command_pool, texture);
     }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     VkCommandPool m_command_pool;
     std::map<Texture::Kind, std::shared_ptr<TextureImage2>> m_textures;
 };

@@ -58,7 +58,7 @@ inline std::optional<Model::Kind> get_model_kind(SpriteKind kind) {
     }
     throw std::invalid_argument("Invalid sprite kind");
 }
-inline Sprite3* construct_sprite(std::shared_ptr<Device::Device> &device, TextureManager &texture_manager,
+inline Sprite3* construct_sprite(std::shared_ptr<Device> &device, TextureManager &texture_manager,
                                  PipelineManager &pipeline_manager,
                                  UniformBufferManager &uniform_buffer_manager,
                                  std::shared_ptr<VertexBuffer2> &vertex_buffer,
@@ -142,7 +142,7 @@ private:
     VkDebugUtilsMessengerEXT m_debug_messenger = VK_NULL_HANDLE;
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<RenderTarget::RenderTarget> m_render_target;
     VkCommandPool m_command_pool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> m_render_buffers;

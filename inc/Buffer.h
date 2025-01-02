@@ -10,9 +10,9 @@
 
 namespace Buffer {
 
-VkBuffer create_buffer(Device::Device* device, VkDeviceSize size, VkBufferUsageFlags usage);
-VkDeviceMemory bind_buffer(Device::Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties);
-void copy_buffer(Device::Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
+VkBuffer create_buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usage);
+VkDeviceMemory bind_buffer(Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties);
+void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
                  VkDeviceSize size);
 } // Buffer
 

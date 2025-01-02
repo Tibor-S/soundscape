@@ -25,12 +25,12 @@ struct DescSpec {
     std::vector<ShaderStage> shader_stages;
 };
 struct DescPoolSpec {
-    Device::Device* device;
+    Device* device;
     std::vector<DescSpec> desc_bindings;
 };
 class Updater;
 
-class DescriptorManager : public Device::DeviceParent {
+class DescriptorManager : public DeviceParent {
 public:
     DescriptorManager(DescPoolSpec &spec, size_t max_sets);
     ~DescriptorManager();

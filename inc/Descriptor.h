@@ -127,7 +127,7 @@ private:
 
 class DescriptorLayout : public Descriptor2 {
 public:
-    DescriptorLayout(const std::shared_ptr<Device::Device>& device, Kind kind) : Descriptor2(kind), m_device(device) {
+    DescriptorLayout(const std::shared_ptr<Device>& device, Kind kind) : Descriptor2(kind), m_device(device) {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.resize(get_binding_count());
         for (size_t i = 0; i < get_binding_count(); i++) {
@@ -161,13 +161,13 @@ public:
 
     [[nodiscard]] VkDescriptorSetLayout get_handle() const { return m_descriptor_set_layout; }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     VkDescriptorSetLayout m_descriptor_set_layout = VK_NULL_HANDLE;
 };
 
 class DescriptorLayoutManager {
 public:
-    DescriptorLayoutManager(const std::shared_ptr<Device::Device> &device,
+    DescriptorLayoutManager(const std::shared_ptr<Device> &device,
                             VkCommandPool command_pool) : m_device(device),
                                                           m_command_pool(command_pool) {}
 
@@ -179,14 +179,14 @@ public:
         return m_descriptor_layout[kind];
     }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     VkCommandPool m_command_pool;
     std::map<Descriptor2::Kind, std::shared_ptr<DescriptorLayout>> m_descriptor_layout;
 };
 
 class DescriptorPool : public Descriptor2 {
 public:
-    DescriptorPool(const std::shared_ptr<Device::Device> &device, std::shared_ptr<DescriptorLayout> &layout, Kind kind,
+    DescriptorPool(const std::shared_ptr<Device> &device, std::shared_ptr<DescriptorLayout> &layout, Kind kind,
                    size_t max_sets) : Descriptor2(kind), m_device(device), m_descriptor_layout(layout)
     {
         std::map<Binding, uint32_t> binding_count {};
@@ -252,7 +252,7 @@ public:
     }
     // [[nodiscard]] free_set(DescriptorSet*)
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<DescriptorLayout> m_descriptor_layout;
     VkDescriptorPool m_descriptor_pool = VK_NULL_HANDLE;
 };
@@ -322,7 +322,7 @@ public:
         m_write_info[binding] = write_info;
     }
 
-    void update_image(size_t binding, const SamplerImage::SamplerImage& image) {
+    void update_image(size_t binding, const SamplerImage& image) {
         const VkDescriptorImageInfo image_info{
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             .imageView = image.get_image_view(),

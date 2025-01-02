@@ -8,7 +8,7 @@
 
 namespace Buffer {
 
-VkBuffer create_buffer(Device::Device* device, VkDeviceSize size, VkBufferUsageFlags usage) {
+VkBuffer create_buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usage) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -23,7 +23,7 @@ VkBuffer create_buffer(Device::Device* device, VkDeviceSize size, VkBufferUsageF
 
 }
 
-VkDeviceMemory bind_buffer(Device::Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties) {
+VkDeviceMemory bind_buffer(Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties) {
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(device->logical_device_handle(), buffer_handle, &memRequirements);
 
@@ -43,7 +43,7 @@ VkDeviceMemory bind_buffer(Device::Device* device, VkBuffer buffer_handle, VkMem
     return memory_handle;
 }
 
-void copy_buffer(Device::Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
+void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
                  VkDeviceSize size) {
     VkCommandBuffer command_buffer = Command::begin_single_time_command(device, command_pool);
 

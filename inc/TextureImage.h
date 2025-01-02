@@ -33,7 +33,7 @@ private:
 };
 
 struct Spec {
-    Device::Device* device;
+    Device* device;
     LoadImage* src_image;
     VkCommandPool command_pool;
     VkImageTiling tiling;
@@ -43,13 +43,13 @@ struct Spec {
     VkCompareOp compare_op;
 };
 
-class TextureImage : public SamplerImage::SamplerImage {
+class TextureImage : public SamplerImage {
 public:
     explicit TextureImage(Spec& spec);
     ~TextureImage();
 private:
-    static ::SamplerImage::Spec get_sampler_spec(Spec& spec) {
-        ::SamplerImage::Spec sampler_image_spec = {};
+    static SamplerImageSpec get_sampler_spec(Spec& spec) {
+        SamplerImageSpec sampler_image_spec = {};
         sampler_image_spec.device = spec.device;
         sampler_image_spec.width = spec.src_image->get_width();
         sampler_image_spec.height = spec.src_image->get_height();

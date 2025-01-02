@@ -1,26 +1,20 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include <chrono>
+#include <cstdlib>
+#include <future>
+#include <iostream>
+#include <queue>
+
+#include <AudioRecord.h>
+#include <Visual.h>
+#include <communication/content_download.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
-#include <AudioRecord.h>
-#include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-
-#include <iostream>
-#include <chrono>
-// #include "HelloTriangleApplication.h"
-#include <cstdlib>
-#include <future>
-#include <Visual.h>
-#include <portaudio.h>
-#include <queue>
-#include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <communication/content_download.h>
 
 void printEnv(const char* var) {
     const char* value = std::getenv(var);

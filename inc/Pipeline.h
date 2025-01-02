@@ -38,7 +38,7 @@ private:
 
 } // Pipeline
 
-VkShaderModule create_shader_module(Device::Device* device, const std::vector<char>& code);
+VkShaderModule create_shader_module(Device* device, const std::vector<char>& code);
 std::vector<char> read_file(const std::string& filename);
 
 class Pipeline2 {
@@ -50,7 +50,7 @@ public:
         COVER_ART,
     };
 
-    Pipeline2(std::shared_ptr<Device::Device> &device, std::shared_ptr<PipelineLayout2> &layout,
+    Pipeline2(std::shared_ptr<Device> &device, std::shared_ptr<PipelineLayout2> &layout,
               std::shared_ptr<RenderTarget::RenderTarget> &render_target, const Kind kind) : m_kind(kind),
         m_device(device), m_layout(layout), m_render_target(render_target)
     {
@@ -194,7 +194,7 @@ public:
 
 private:
     Kind m_kind;
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<PipelineLayout2> m_layout;
     std::shared_ptr<RenderTarget::RenderTarget> m_render_target;
     VkPipeline m_pipeline = VK_NULL_HANDLE;
@@ -230,7 +230,7 @@ private:
 
 class PipelineManager {
 public:
-    PipelineManager(const std::shared_ptr<Device::Device>& device,
+    PipelineManager(const std::shared_ptr<Device>& device,
                           const std::shared_ptr<PipelineLayoutManager>& pipeline_layout_manager,
                           const std::shared_ptr<RenderTarget::RenderTarget>& render_target,
                           VkCommandPool command_pool) : m_device(device),
@@ -250,7 +250,7 @@ public:
         return m_pipeline[kind];
     }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<PipelineLayoutManager> m_pipeline_layout_manager;
     std::shared_ptr<RenderTarget::RenderTarget> m_render_target;
     VkCommandPool m_command_pool;

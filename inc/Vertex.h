@@ -4,12 +4,13 @@
 
 #ifndef VERTEX_H
 #define VERTEX_H
+
+#include <set>
+#include <vulkan/vulkan.hpp>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
-#include <set>
-#include <unordered_set>
-#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
@@ -97,29 +98,6 @@ private:
     std::vector<ObjVertex> m_vertices;
     std::vector<u_int32_t> m_indices;
 };
-
-
-// struct SourceVertex {
-//     glm::vec3 pos;
-//     glm::vec3 color;
-//     glm::vec3 normal;
-//     glm::vec2 tex_coord;
-//     std::vector<size_t> vertex_groups;
-
-    // bool operator==(const SourceVertex& other) const {
-    //     return pos == other.pos && color == other.color && normal == other.normal && tex_coord == other.tex_coord &&
-    //            vertex_groups == other.vertex_groups;
-    // }
-// };
-//
-// template<> struct std::hash<SourceVertex> {
-//     size_t operator()(SourceVertex const& vertex) const {
-//         return (((hash<glm::vec3>()(vertex.pos) ^
-//                  (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-//                  (hash<glm::vec3>()(vertex.normal) << 1) >> 1) ^
-//                (hash<glm::vec2>()(vertex.tex_coord) << 1);
-//     }
-// };
 
 struct StandardVertex {
     glm::vec3 pos;

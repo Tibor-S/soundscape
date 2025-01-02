@@ -83,10 +83,10 @@ Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_
 
     // Device
     {
-        Device::Spec device_spec = {
+        DeviceSpec device_spec = {
             .instance = m_instance
         };
-        m_device = std::make_shared<Device::Device>(device_spec, m_surface);
+        m_device = std::make_shared<Device>(device_spec, m_surface);
     }
 
     // Render Target
@@ -104,7 +104,7 @@ Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = m_device->queue_index(Queue::GRAPHICS).value();
+        poolInfo.queueFamilyIndex = m_device->queue_index(GRAPHICS).value();
 
         if (vkCreateCommandPool(m_device->logical_device_handle(), &poolInfo, nullptr, &m_command_pool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");
@@ -332,7 +332,7 @@ void Visual::draw_frame() {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    VkQueue graphics_queue = m_device->queue(Queue::GRAPHICS).value();
+    VkQueue graphics_queue = m_device->queue(GRAPHICS).value();
     if (vkQueueSubmit(graphics_queue, 1, &submitInfo, m_in_flight_fences[m_current_frame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
@@ -349,7 +349,7 @@ void Visual::draw_frame() {
 
     presentInfo.pImageIndices = &imageIndex;
 
-    VkQueue present_queue = m_device->queue(Queue::PRESENTATION).value();
+    VkQueue present_queue = m_device->queue(PRESENTATION).value();
     result = vkQueuePresentKHR(present_queue, &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebuffer_resized) {
         m_framebuffer_resized = false;

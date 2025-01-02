@@ -15,12 +15,12 @@
 namespace VertexBuffer {
 
 struct Spec {
-    Device::Device* device;
+    Device* device;
     VkCommandPool command_pool;
     std::vector<const char*> models;
 };
 
-class VertexBuffer : public Device::DeviceParent {
+class VertexBuffer : public DeviceParent {
 public:
     VertexBuffer(Spec& spec);
     ~VertexBuffer();
@@ -60,7 +60,7 @@ public:
         size_t index_count;
     };
 
-    VertexBuffer2(const std::shared_ptr<Device::Device> &device, VkCommandPool command_pool,
+    VertexBuffer2(const std::shared_ptr<Device> &device, VkCommandPool command_pool,
                   const std::vector<Model*> &models) : m_device(device) {
         std::vector<char> vertices;
         std::vector<uint32_t> indices;
@@ -79,11 +79,11 @@ public:
         {
             VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
 
-            StagingBuffer::Spec staging_spec {};
+            StagingBufferSpec staging_spec {};
             staging_spec.device = m_device.get();
             staging_spec.data = vertices.data();
             staging_spec.size = buffer_size;
-            auto staging_buffer = new StagingBuffer::StagingBuffer(staging_spec);
+            auto staging_buffer = new StagingBuffer(staging_spec);
 
             m_vertex_buffer = Buffer::create_buffer(m_device.get(), buffer_size,
                                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -97,11 +97,11 @@ public:
         {
             VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
 
-            StagingBuffer::Spec staging_spec {};
+            StagingBufferSpec staging_spec {};
             staging_spec.device = m_device.get();
             staging_spec.data = indices.data();
             staging_spec.size = buffer_size;
-            auto staging_buffer = new StagingBuffer::StagingBuffer(staging_spec);
+            auto staging_buffer = new StagingBuffer(staging_spec);
 
             m_index_buffer = Buffer::create_buffer(m_device.get(), buffer_size,
                                                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
@@ -125,7 +125,7 @@ public:
     [[nodiscard]] VkBuffer get_index_buffer() const { return m_index_buffer; }
     [[nodiscard]] ModelPosition get_model_position(Model::Kind kind) { return m_position[kind]; }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
 
     std::map<Model::Kind, ModelPosition> m_position;
     VkBuffer m_vertex_buffer;

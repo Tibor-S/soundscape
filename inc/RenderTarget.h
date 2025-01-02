@@ -14,7 +14,7 @@ struct Spec : SwapChain::Spec {
     // size_t max_image_count;
 };
 
-class RenderTarget : public Device::DeviceParent {
+class RenderTarget : public DeviceParent {
 public:
     explicit RenderTarget(Spec& spec);
     ~RenderTarget();

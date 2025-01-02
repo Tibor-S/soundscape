@@ -4,8 +4,7 @@
 
 #include <SamplerImage.h>
 
-namespace SamplerImage {
-SamplerImage::SamplerImage(const Spec& spec) : Image::Image(spec){
+SamplerImage::SamplerImage(const SamplerImageSpec& spec) : Image::Image(spec){
     m_min_filter = spec.min_filter;
     m_mag_filter = spec.mag_filter;
     m_address_modes[0] = spec.address_modes[0];
@@ -33,7 +32,7 @@ VkSampler SamplerImage::get_sampler() const {
 
 // Private
 
-VkSampler SamplerImage::create_sampler(Device::Device* device, VkFilter mag_filter, VkFilter min_filter,
+VkSampler SamplerImage::create_sampler(Device* device, VkFilter mag_filter, VkFilter min_filter,
                                   std::array<VkSamplerAddressMode, 3> &address_modes, VkBorderColor border_color,
                                   VkBool32 un_normalized, VkBool32 compare_enable, VkCompareOp compare_op,
                                   VkSamplerMipmapMode mipmap_mode, float min_lod, float mip_lod_bias,
@@ -66,4 +65,3 @@ VkSampler SamplerImage::create_sampler(Device::Device* device, VkFilter mag_filt
 
     return sampler;
 }
-} // SamplerImage

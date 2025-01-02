@@ -6,7 +6,7 @@
 #include <Format.h>
 
 namespace Format {
-VkFormat find_supported(Device::Device *device, const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+VkFormat find_supported(Device *device, const std::vector<VkFormat> &candidates, VkImageTiling tiling,
                         VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;

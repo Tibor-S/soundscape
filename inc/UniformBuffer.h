@@ -16,11 +16,11 @@
 namespace UniformBuffer {
 
 struct Spec {
-    Device::Device* device;
+    Device* device;
     size_t size;
 };
 // template<typename T>
-class UniformBuffer : public Device::DeviceParent {
+class UniformBuffer : public DeviceParent {
 public:
     // struct Data {};
 
@@ -85,7 +85,7 @@ public:
         glm::mat4 proj;
     };
 
-    explicit Camera(const std::shared_ptr<Device::Device>& device) : UniformBuffer(
+    explicit Camera(const std::shared_ptr<Device>& device) : UniformBuffer(
                                                                          ::UniformBuffer::Spec{
                                                                              .device = device.get(),
                                                                              .size = sizeof(Data),
@@ -99,7 +99,7 @@ public:
         update(&m_data, sizeof(Data));
     }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     Data m_data = {};
 };
 
@@ -110,7 +110,7 @@ public:
         CAMERA,
     };
 
-    explicit UniformBufferManager(const std::shared_ptr<Device::Device>& device) : m_device(device) {}
+    explicit UniformBufferManager(const std::shared_ptr<Device>& device) : m_device(device) {}
 
     [[nodiscard]] std::shared_ptr<UniformBuffer::UniformBuffer> acquire_buffer(const Kind kind) {
         switch (kind) {
@@ -134,7 +134,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     // std::map<Kind, std::shared_ptr<UniformBuffer::UniformBuffer>> m_buffers;
     std::optional<std::shared_ptr<Camera>> m_camera = {};
 };

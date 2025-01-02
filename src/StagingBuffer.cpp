@@ -5,8 +5,7 @@
 #include <StagingBuffer.h>
 #include <Buffer.h>
 
-namespace StagingBuffer {
-StagingBuffer::StagingBuffer(Spec& spec) : DeviceParent(spec.device) {
+StagingBuffer::StagingBuffer(const StagingBufferSpec& spec) : DeviceParent(spec.device) {
     m_max_size = spec.size;
     m_buffer = Buffer::create_buffer(get_device(), m_max_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     m_memory = Buffer::bind_buffer(get_device(), m_buffer,
@@ -20,5 +19,3 @@ StagingBuffer::~StagingBuffer() {
     vkDestroyBuffer(get_device()->logical_device_handle(), m_buffer, nullptr);
     vkFreeMemory(get_device()->logical_device_handle(), m_memory, nullptr);
 }
-
-} // Buffer

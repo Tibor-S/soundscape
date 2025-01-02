@@ -4,10 +4,8 @@
 
 #include <Queue.h>
 
-namespace Queue {
-
-FamilyIndices find_families(VkPhysicalDevice physical_device, std::optional<VkSurfaceKHR> surface) {
-    Queue::FamilyIndices indices;
+QueueFamilyIndices find_families(VkPhysicalDevice physical_device, std::optional<VkSurfaceKHR> surface) {
+    QueueFamilyIndices indices;
 
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
@@ -36,7 +34,4 @@ FamilyIndices find_families(VkPhysicalDevice physical_device, std::optional<VkSu
     }
 
     return indices;
-}
-
-
 }

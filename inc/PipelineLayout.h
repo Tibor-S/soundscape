@@ -36,7 +36,7 @@ private:
 
 class PipelineLayout2 : public Descriptor2 {
 public:
-    PipelineLayout2(const std::shared_ptr<Device::Device> &device,
+    PipelineLayout2(const std::shared_ptr<Device> &device,
                     const std::shared_ptr<DescriptorLayout> &layout) : Descriptor2(layout->get_kind()), m_device(device),
                                                                        m_layout(layout)
     {
@@ -59,13 +59,13 @@ public:
     [[nodiscard]] VkPipelineLayout get_handle() const { return m_pipeline_layout; }
 private:
     VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<DescriptorLayout> m_layout;
 };
 
 class PipelineLayoutManager {
 public:
-    PipelineLayoutManager(const std::shared_ptr<Device::Device>& device,
+    PipelineLayoutManager(const std::shared_ptr<Device>& device,
                           const std::shared_ptr<DescriptorLayoutManager>& descriptor_layout_manager,
                           VkCommandPool command_pool) : m_device(device),
                                                         m_descriptor_layout_manager(descriptor_layout_manager),
@@ -81,7 +81,7 @@ public:
         return m_pipeline_layout[kind];
     }
 private:
-    std::shared_ptr<Device::Device> m_device;
+    std::shared_ptr<Device> m_device;
     std::shared_ptr<DescriptorLayoutManager> m_descriptor_layout_manager;
     VkCommandPool m_command_pool;
     std::map<PipelineLayout2::Kind, std::shared_ptr<PipelineLayout2>> m_pipeline_layout;

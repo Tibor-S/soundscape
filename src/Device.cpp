@@ -10,18 +10,18 @@
 #include <set>
 #include <SwapChainSupport.h>
 
-namespace Device {
-Device::Device(Spec& spec, std::optional<VkSurfaceKHR> uses_surface) {
+Device::Device(const DeviceSpec& spec, const std::optional<VkSurfaceKHR> uses_surface) {
     m_spec = spec;
     m_physical_device = pick_physical_device(m_spec.instance, uses_surface);
     m_msaa_samples = max_usable_sample_count(m_physical_device);
-    m_queue_families = Queue::find_families(m_physical_device, uses_surface);
+    m_queue_families = find_families(m_physical_device, uses_surface);
     m_logical_device = create_logical_device(m_physical_device, m_queue_families);
-    m_queue[Queue::Type::GRAPHICS] = VK_NULL_HANDLE;
-    vkGetDeviceQueue(m_logical_device, m_queue_families.graphicsFamily.value(), 0, &m_queue[Queue::Type::GRAPHICS]);
+    m_queue[QueueType::GRAPHICS] = VK_NULL_HANDLE;
+    vkGetDeviceQueue(m_logical_device, m_queue_families.graphicsFamily.value(), 0, &m_queue[QueueType::GRAPHICS]);
     if (uses_surface.has_value() && m_queue_families.presentFamily.has_value()) {
-        m_queue[Queue::Type::PRESENTATION] = VK_NULL_HANDLE;
-        vkGetDeviceQueue(m_logical_device, m_queue_families.presentFamily.value(), 0, &m_queue[Queue::Type::PRESENTATION]);
+        m_queue[QueueType::PRESENTATION] = VK_NULL_HANDLE;
+        vkGetDeviceQueue(m_logical_device, m_queue_families.presentFamily.value(), 0,
+                         &m_queue[QueueType::PRESENTATION]);
     }
 }
 
@@ -33,18 +33,18 @@ VkPhysicalDevice Device::physical_device_handle() const {
     return m_physical_device;
 }
 
-std::optional<size_t> Device::queue_index(Queue::Type queue_type) const {
+std::optional<size_t> Device::queue_index(const QueueType queue_type) const {
     switch (queue_type) {
-        case Queue::Type::GRAPHICS:
+        case QueueType::GRAPHICS:
             return m_queue_families.graphicsFamily;
-        case Queue::Type::PRESENTATION:
+        case QueueType::PRESENTATION:
             return m_queue_families.presentFamily;
         default:
             return {};
     }
 }
 
-std::optional<VkQueue> Device::queue(Queue::Type queue_type) const {
+std::optional<VkQueue> Device::queue(const QueueType queue_type) const {
     if (auto queue = m_queue.find(queue_type); queue != m_queue.end())
         return queue->second;
     else
@@ -56,15 +56,15 @@ VkSampleCountFlagBits Device::max_sample_count() const {
     return m_msaa_samples;
 }
 
-SwapChainSupport::SwapChainSupportDetails Device::get_swap_chain_support(VkSurfaceKHR surface) const {
-    return Device::query_swap_chain_support(m_physical_device, surface);
+SwapChainSupportDetails Device::swap_chain_support(VkSurfaceKHR surface) const {
+    return query_swap_chain_support(m_physical_device, surface);
 }
 void Device::destroy() const {
     vkDestroyDevice(m_logical_device, nullptr);
 }
 
 // Private
-VkPhysicalDevice Device::pick_physical_device(VkInstance instance, std::optional<VkSurfaceKHR> uses_surface) {
+VkPhysicalDevice Device::pick_physical_device(VkInstance instance, const std::optional<VkSurfaceKHR> uses_surface) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
     if (deviceCount == 0) {
@@ -76,8 +76,6 @@ VkPhysicalDevice Device::pick_physical_device(VkInstance instance, std::optional
     for (const auto& physical_device : devices) {
         if (is_device_suitable(physical_device, uses_surface)) {
             return physical_device;
-            // msaaSamples = getMaxUsableSampleCount();
-            // break;
         }
     }
 
@@ -90,7 +88,7 @@ bool Device::is_device_suitable(VkPhysicalDevice physical_device, std::optional<
     vkGetPhysicalDeviceProperties(physical_device, &deviceProperties);
     vkGetPhysicalDeviceFeatures(physical_device, &deviceFeatures);
 
-    Queue::FamilyIndices indices = Queue::find_families(physical_device, uses_surface);
+    QueueFamilyIndices indices = find_families(physical_device, uses_surface);
     if (!indices.is_complete(uses_surface.has_value())) return false;
 
     bool extensions_supported = check_device_extension_support(physical_device);
@@ -128,10 +126,10 @@ bool Device::check_device_extension_support(VkPhysicalDevice physical_device) {
     return requiredExtensions.empty();
 }
 
-SwapChainSupport::SwapChainSupportDetails Device::query_swap_chain_support(
+SwapChainSupportDetails Device::query_swap_chain_support(
     VkPhysicalDevice physical_device, VkSurfaceKHR surface)
 {
-    SwapChainSupport::SwapChainSupportDetails details;
+    SwapChainSupportDetails details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &details.capabilities);
 
@@ -148,7 +146,8 @@ SwapChainSupport::SwapChainSupportDetails Device::query_swap_chain_support(
 
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &presentModeCount,
+                                                  details.presentModes.data());
     }
 
     return details;
@@ -158,7 +157,8 @@ VkSampleCountFlagBits Device::max_usable_sample_count(VkPhysicalDevice physical_
     VkPhysicalDeviceProperties physical_device_properties;
     vkGetPhysicalDeviceProperties(physical_device, &physical_device_properties);
 
-    VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts & physical_device_properties.limits.framebufferDepthSampleCounts;
+    VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts &
+                                physical_device_properties.limits.framebufferDepthSampleCounts;
     if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
     if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
     if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
@@ -169,7 +169,7 @@ VkSampleCountFlagBits Device::max_usable_sample_count(VkPhysicalDevice physical_
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VkDevice Device::create_logical_device(VkPhysicalDevice physical_device, Queue::FamilyIndices queue_indices) {
+VkDevice Device::create_logical_device(VkPhysicalDevice physical_device, QueueFamilyIndices queue_indices) {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {
         queue_indices.graphicsFamily.value(), queue_indices.presentFamily.value()
@@ -209,6 +209,3 @@ VkDevice Device::create_logical_device(VkPhysicalDevice physical_device, Queue::
     }
     return logical_device;
 }
-
-
-} // Device

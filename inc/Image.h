@@ -4,12 +4,11 @@
 
 #ifndef IMAGE_H
 #define IMAGE_H
+
 #include <vulkan/vulkan.hpp>
 
-namespace Image {
-
-struct Spec {
-    Device::Device* device;
+struct ImageSpec {
+    Device* device;
     uint32_t width;
     uint32_t height;
     VkSampleCountFlagBits num_samples;
@@ -24,13 +23,13 @@ struct Spec {
 
 class Image {
 public:
-    Image(const Spec& spec);
+    explicit Image(const ImageSpec& spec);
     ~Image();
-    void generate_mipmaps(VkCommandPool command_pool_handle);
+    void generate_mipmaps(VkCommandPool command_pool_handle) const;
     void transition_layout(VkCommandPool command_pool_handle, VkImageLayout old_layout, VkImageLayout new_layout) const;
     void copy_buffer_to_image(VkCommandPool command_pool_handle, VkBuffer buffer);
 
-    Device::Device* get_device() const;
+    Device* get_device() const;
     uint32_t get_mip_levels() const;
 
     VkImage get_image() const;
@@ -40,7 +39,7 @@ private:
     VkImageView m_view_handle;
     VkDeviceMemory m_memory;
 
-    Device::Device* m_device = nullptr;
+    Device* m_device = nullptr;
     uint32_t m_width;
     uint32_t m_height;
     VkSampleCountFlagBits m_num_samples;
@@ -56,10 +55,9 @@ private:
                                 VkSampleCountFlagBits num_samples);
     static VkImageView create_view(VkDevice device_handle, VkImage handle, VkFormat format,
                                    VkImageAspectFlags aspect_flags, uint32_t mip_levels);
-    static VkDeviceMemory bind_image_memory(Device::Device* device, VkImage handle, VkMemoryPropertyFlags properties);
+    static VkDeviceMemory bind_image_memory(Device* device, VkImage handle, VkMemoryPropertyFlags properties);
     static bool has_stencil_component(VkFormat format);
 };
 
-} // Image
 
 #endif //IMAGE_H

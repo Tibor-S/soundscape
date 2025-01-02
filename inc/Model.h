@@ -4,20 +4,8 @@
 
 #ifndef MODEL_H
 #define MODEL_H
-#include <Globals.h>
-#include <Texture.h>
-// #define TINYOBJLOADER_IMPLEMENTATION
-// #include <tiny_obj_loader.h>
-#include <Vertex.h>
-#include <iostream>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
 
-// Load Model
+#include <Vertex.h>
 
 class LoadModel {
 public:
@@ -81,7 +69,7 @@ private:
     static const char* get_obj_path(const Kind kind) {
         switch (kind) {
             case VIKING_ROOM:
-                return MODEL_PATH.c_str();
+                return "/Users/sebastian/CLionProjects/soundscape/models/viking_room.obj";
             case BAR:
                 return "/Users/sebastian/CLionProjects/soundscape/models/bar.obj";
             case BACK_DROP:

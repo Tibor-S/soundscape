@@ -10,12 +10,12 @@
 namespace RenderPass {
 
 struct Spec {
-    Device::Device* device;
+    Device* device;
     VkFormat color_format;
     VkFormat depth_format;
 };
 
-class RenderPass : public Device::DeviceParent {
+class RenderPass : public DeviceParent {
 public:
     explicit RenderPass(Spec& spec);
     ~RenderPass();
@@ -27,7 +27,7 @@ private:
     VkFormat m_color_format;
     VkFormat m_depth_format;
 
-    static VkRenderPass create_render_pass(Device::Device* device, VkFormat color_format, VkFormat depth_format);
+    static VkRenderPass create_render_pass(Device* device, VkFormat color_format, VkFormat depth_format);
 };
 
 class RenderPassParent {

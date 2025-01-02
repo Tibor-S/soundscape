@@ -4,19 +4,18 @@
 
 #ifndef STAGINGBUFFER_H
 #define STAGINGBUFFER_H
+
 #include <Device.h>
 
-namespace StagingBuffer {
-
-struct Spec {
-    Device::Device* device;
+struct StagingBufferSpec {
+    Device* device;
     void* data;
     size_t size;
 };
 
-class StagingBuffer : Device::DeviceParent {
+class StagingBuffer : DeviceParent {
 public:
-    explicit StagingBuffer(Spec& spec);
+    explicit StagingBuffer(const StagingBufferSpec& spec);
     ~StagingBuffer();
 
     [[nodiscard]] VkBuffer get_handle() const { return m_buffer; }
@@ -28,7 +27,5 @@ private:
     VkDeviceMemory m_memory;
     size_t m_max_size;
 };
-
-} // Buffer
 
 #endif //STAGINGBUFFER_H

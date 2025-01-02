@@ -147,7 +147,7 @@ Pipeline::~Pipeline() {
 
 } // Pipeline
 
-VkShaderModule create_shader_module(Device::Device* device, const std::vector<char>& code) {
+VkShaderModule create_shader_module(Device* device, const std::vector<char>& code) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     create_info.codeSize = code.size();

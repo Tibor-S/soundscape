@@ -11,11 +11,11 @@ TextureImage::TextureImage(Spec& spec) : SamplerImage(get_sampler_spec(spec)) {
     auto src_image = spec.src_image;
     auto command_pool = spec.command_pool;
 
-    StagingBuffer::Spec staging_buffer_spec = {};
+    StagingBufferSpec staging_buffer_spec = {};
     staging_buffer_spec.device = get_device();
     staging_buffer_spec.data = src_image->get_pixels();
     staging_buffer_spec.size = src_image->get_image_size();
-    auto staging_buffer = new StagingBuffer::StagingBuffer(staging_buffer_spec);
+    auto staging_buffer = new StagingBuffer(staging_buffer_spec);
 
     transition_layout(command_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     copy_buffer_to_image(command_pool, staging_buffer->get_handle());

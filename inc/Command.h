@@ -9,8 +9,8 @@
 #include <vulkan/vulkan.hpp>
 
 namespace Command {
-VkCommandBuffer begin_single_time_command(Device::Device* device, VkCommandPool command_pool_handle);
-void end_single_time_command(Device::Device *device, VkCommandPool command_pool_handle,
+VkCommandBuffer begin_single_time_command(Device* device, VkCommandPool command_pool_handle);
+void end_single_time_command(Device *device, VkCommandPool command_pool_handle,
                              VkCommandBuffer command_buffer_handle);
 }
 

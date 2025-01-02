@@ -17,7 +17,7 @@ RenderPass::~RenderPass() {
 
 // Private
 
-VkRenderPass RenderPass::create_render_pass(Device::Device* device, VkFormat color_format, VkFormat depth_format) {
+VkRenderPass RenderPass::create_render_pass(Device* device, VkFormat color_format, VkFormat depth_format) {
     VkAttachmentDescription color_attachment{};
     color_attachment.format = color_format;
     color_attachment.samples = device->max_sample_count();
