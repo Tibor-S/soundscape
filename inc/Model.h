@@ -9,7 +9,7 @@
 
 class LoadModel {
 public:
-    explicit LoadModel(size_t vertex_size) : m_vertex_size(vertex_size) {}
+    explicit LoadModel(const size_t vertex_size) : m_vertex_size(vertex_size) {}
     virtual  ~LoadModel() = default;
 
     [[nodiscard]] size_t get_vertex_size() const { return m_vertex_size; }
@@ -18,20 +18,15 @@ public:
 
     template<typename T>
     void append_vertex(T& vertex) {
-        auto serialized_vertex = reinterpret_cast<char*>(&vertex);
+        const auto serialized_vertex = reinterpret_cast<char*>(&vertex);
         for (int i = 0; i < sizeof(vertex); i++) {
             m_vertices.push_back(serialized_vertex[i]);
         }
     }
-    template<typename T>
-    T* get_vertex_mut(const size_t index) {
-        return reinterpret_cast<T*>(m_vertices.data()) + index * sizeof(T);
-    }
-    void append_index(uint32_t index) {
+
+    void append_index(const uint32_t index) {
         m_indices.push_back(index);
     }
-    // void set_vertices(std::pmr::vector<StandardVertex>& vertices) { return &m_vertices; }
-    // void set_indices(std::pmr::vector<StandardVertex>& vertices) { return &m_indices; }
 private:
     size_t m_vertex_size;
     std::vector<char> m_vertices;

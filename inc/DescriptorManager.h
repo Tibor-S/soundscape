@@ -4,62 +4,62 @@
 
 #ifndef DESCRIPTORMANAGER_H
 #define DESCRIPTORMANAGER_H
-#include <Device.h>
+
 #include <vector>
+
 #include <vulkan/vulkan.hpp>
 
-namespace Descriptor {
+#include <Device.h>
 
-enum Type {
+enum DescriptorType {
     UNIFORM_BUFFER = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
     IMAGE_SAMPLER = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 };
-enum ShaderStage {
+enum DescriptorShaderStage {
     VERTEX = VK_SHADER_STAGE_VERTEX_BIT,
     FRAGMENT = VK_SHADER_STAGE_FRAGMENT_BIT,
 };
-struct DescSpec {
-    Type type;
+struct DescriptionSpec {
+    DescriptorType type;
     size_t binding;
     size_t count;
-    std::vector<ShaderStage> shader_stages;
+    std::vector<DescriptorShaderStage> shader_stages;
 };
-struct DescPoolSpec {
+struct DescriptorPoolSpec {
     Device* device;
-    std::vector<DescSpec> desc_bindings;
+    std::vector<DescriptionSpec> desc_bindings;
 };
-class Updater;
+class DescriptorUpdater;
 
 class DescriptorManager : public DeviceParent {
 public:
-    DescriptorManager(DescPoolSpec &spec, size_t max_sets);
+    DescriptorManager(DescriptorPoolSpec &spec, size_t max_sets);
     ~DescriptorManager();
 
     std::vector<size_t> get_unique_descriptors(size_t count);
-    VkDescriptorSetLayout get_layout_handle();
-    VkDescriptorSet descriptor_handle(size_t index) const;
-    Type descriptor_type(size_t binding) const;
-    Updater* get_updater();
-    // void destroy() const;
+    [[nodiscard]] VkDescriptorSetLayout get_layout_handle() const;
+    [[nodiscard]] VkDescriptorSet descriptor_handle(size_t index) const;
+    [[nodiscard]] DescriptorType descriptor_type(size_t binding) const;
+    DescriptorUpdater* get_updater();
 
 private:
     VkDescriptorPool m_descriptor_pool {};
     VkDescriptorSetLayout m_descriptor_set_layout {};
     std::vector<VkDescriptorSet> m_descriptor_sets;
-    std::vector<DescSpec> m_desc_bindings;
+    std::vector<DescriptionSpec> m_desc_bindings;
 };
 
 
-class Updater {
+class DescriptorUpdater {
 public:
     DescriptorManager *manager = nullptr; // Parent
 
-    explicit Updater(DescriptorManager *manager) {
+    explicit DescriptorUpdater(DescriptorManager *manager) {
         this->manager = manager;
     };
     void update(); // Frees Updater
-    Updater* update_buffer(size_t index, size_t binding, VkBuffer buffer_handle, size_t offset, size_t size);
-    Updater* update_image(size_t index, size_t binding, VkImageView image_view_handle, VkSampler sampler_handle);
+    DescriptorUpdater* update_buffer(size_t index, size_t binding, VkBuffer buffer_handle, size_t offset, size_t size);
+    DescriptorUpdater* update_image(size_t index, size_t binding, VkImageView image_view_handle, VkSampler sampler_handle);
 private:
     struct UpdateBuffer {
         size_t descriptor_index;
@@ -75,8 +75,6 @@ private:
         VkSampler sampler_handle;
     };
 
-
-    // Buffer
     std::vector<UpdateBuffer> m_buffers;
     std::vector<UpdateImage> m_images;
 };
@@ -90,6 +88,5 @@ public:
 private:
     DescriptorManager* m_descriptor_manager;
 };
-}
 
 #endif //DESCRIPTORMANAGER_H

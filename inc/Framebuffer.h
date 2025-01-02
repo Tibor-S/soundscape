@@ -5,28 +5,25 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include <RenderPass.h>
 #include <vulkan/vulkan.hpp>
 
-namespace Framebuffer  {
+#include <RenderPass.h>
 
-struct Spec {
-    RenderPass::RenderPass* render_pass;
-    SwapChain::SwapChain* swap_chain;
+struct FramebufferSpec {
+    RenderPass* render_pass;
+    SwapChain* swap_chain;
     size_t swap_chain_index;
 };
 
-class Framebuffer : SwapChain::SwapChainParent, RenderPass::RenderPassParent {
+class Framebuffer : SwapChainParent, RenderPassParent {
 public:
-    explicit Framebuffer(Spec& spec);
+    explicit Framebuffer(const FramebufferSpec& spec);
     ~Framebuffer();
-    VkFramebuffer get_framebuffer_handle() const { return m_framebuffer; };
-    size_t get_swap_chain_index() const { return m_swap_chain_index; };
+    [[nodiscard]] VkFramebuffer get_framebuffer_handle() const { return m_framebuffer; };
+    [[nodiscard]] size_t get_swap_chain_index() const { return m_swap_chain_index; };
 private:
-    VkFramebuffer m_framebuffer;
+    VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
     size_t m_swap_chain_index;
 };
-
-} // Framebuffer
 
 #endif //FRAMEBUFFER_H

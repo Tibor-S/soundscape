@@ -4,12 +4,78 @@
 
 #include "Visual.h"
 
+#include <unordered_set>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
+
+std::optional<Descriptor::Kind> get_descriptor_kind(const SpriteKind kind) {
+    switch (kind) {
+        case SpriteKind::VIKING_ROOM:
+            return VikingRoom::descriptor_set_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::descriptor_set_kind();
+        case SpriteKind::BACK_DROP_SPRITE:
+            return BackDropSprite::descriptor_set_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::descriptor_set_kind();
+    }
+    throw std::invalid_argument("Invalid sprite kind");
+}
+
+std::optional<Pipeline::Kind> get_pipeline_kind(const SpriteKind kind) {
+    switch (kind) {
+        case SpriteKind::VIKING_ROOM:
+            return VikingRoom::pipeline_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::pipeline_kind();
+        case SpriteKind::BACK_DROP_SPRITE:
+            return BackDropSprite::pipeline_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::pipeline_kind();
+    }
+    throw std::invalid_argument("Invalid sprite kind");
+}
+
+std::optional<Model::Kind> get_model_kind(const SpriteKind kind) {
+    switch (kind) {
+        case SpriteKind::VIKING_ROOM:
+            return VikingRoom::model_kind();
+        case SpriteKind::BAR_SPRITE:
+            return BarSprite::model_kind();
+        case SpriteKind::BACK_DROP_SPRITE:
+            return BackDropSprite::model_kind();
+        case SpriteKind::COVER_ART_SPRITE:
+            return CoverArtSprite::model_kind();
+    }
+    throw std::invalid_argument("Invalid sprite kind");
+}
+
+Sprite * construct_sprite(const std::shared_ptr<Device> &device, TextureManager &texture_manager,
+    PipelineManager &pipeline_manager, UniformBufferManager &uniform_buffer_manager,
+    const std::shared_ptr<VertexBuffer> &vertex_buffer, std::shared_ptr<DescriptorPool> &descriptor_pool,
+    const size_t image_count, const SpriteKind kind) {
+    switch (kind) {
+        case SpriteKind::VIKING_ROOM:
+            return new VikingRoom(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+                                  descriptor_pool, image_count);
+        case SpriteKind::BAR_SPRITE:
+            return new BarSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+                                 descriptor_pool, image_count);
+        case SpriteKind::BACK_DROP_SPRITE:
+            return new BackDropSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+                                      descriptor_pool, image_count);
+        case SpriteKind::COVER_ART_SPRITE:
+            return new CoverArtSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
+                                      descriptor_pool, image_count);
+
+    }
+    throw std::invalid_argument("Invalid sprite kind");
+}
 
 Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_in_flight) {
     glfwInit();
@@ -91,12 +157,12 @@ Visual::Visual(size_t max_frames_in_flight) : m_max_frames_in_flight(max_frames_
 
     // Render Target
     {
-        RenderTarget::Spec spec {};
+        RenderTargetSpec spec {};
         spec.max_image_count = m_max_frames_in_flight + 1;
         spec.device = m_device.get();
         spec.surface_handle = m_surface;
         spec.window = m_window;
-        m_render_target = std::make_shared<RenderTarget::RenderTarget>(spec);
+        m_render_target = std::make_shared<RenderTarget>(spec);
     }
 
     // Command Pool
@@ -189,11 +255,11 @@ void Visual::run(InterFrame* inter_frame) {
 }
 
 void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
-    std::map<Descriptor2::Kind, std::shared_ptr<DescriptorPool>> unique_descriptor_pools;
+    std::map<Descriptor::Kind, std::shared_ptr<DescriptorPool>> unique_descriptor_pools;
     // std::map<Pipeline2::Kind, std::shared_ptr<Pipeline2>> unique_pipelines;
     // std::map<Texture::Kind, std::shared_ptr<TextureImage2>> unique_textures;
     std::unordered_set<Model::Kind> unique_models;
-    std::map<Descriptor2::Kind, size_t> descriptor_count;
+    std::map<Descriptor::Kind, size_t> descriptor_count;
 
     for (const auto& [id, kind] : sprites) {
         const auto descriptor_kind = get_descriptor_kind(kind).value();
@@ -259,7 +325,7 @@ void Visual::load_sprites(std::map<const char*, SpriteKind> &sprites) {
         auto model = new Model(kind);
         loaded_models.push_back(model);
     }
-    auto vertex_buffer = std::make_shared<VertexBuffer2>(m_device, m_command_pool, loaded_models);
+    auto vertex_buffer = std::make_shared<VertexBuffer>(m_device, m_command_pool, loaded_models);
     for (const auto model : loaded_models) {
         delete model;
     }

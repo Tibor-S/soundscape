@@ -6,9 +6,7 @@
 #include <Command.h>
 #include <Memory.h>
 
-namespace Buffer {
-
-VkBuffer create_buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usage) {
+VkBuffer Buffer::create_buffer(const Device* device, const VkDeviceSize size, const VkBufferUsageFlags usage) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -23,7 +21,9 @@ VkBuffer create_buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usa
 
 }
 
-VkDeviceMemory bind_buffer(Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties) {
+VkDeviceMemory Buffer::bind_buffer(const Device *device, VkBuffer buffer_handle,
+                                   const VkMemoryPropertyFlags properties)
+{
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(device->logical_device_handle(), buffer_handle, &memRequirements);
 
@@ -43,8 +43,9 @@ VkDeviceMemory bind_buffer(Device* device, VkBuffer buffer_handle, VkMemoryPrope
     return memory_handle;
 }
 
-void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
-                 VkDeviceSize size) {
+void Buffer::copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
+                         const VkDeviceSize size)
+{
     VkCommandBuffer command_buffer = Command::begin_single_time_command(device, command_pool);
 
     VkBufferCopy copy_region{};
@@ -54,4 +55,3 @@ void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer
     Command::end_single_time_command(device, command_pool, command_buffer);
 }
 
-}

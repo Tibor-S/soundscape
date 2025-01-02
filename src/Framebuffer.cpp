@@ -2,44 +2,45 @@
 // Created by Sebastian Sandstig on 2024-12-02.
 //
 
-#include "Framebuffer.h"
+#include <Framebuffer.h>
 
-namespace Framebuffer {
-
-Framebuffer::Framebuffer(Spec& spec) : SwapChainParent(spec.swap_chain), RenderPassParent(spec.render_pass) {
+Framebuffer::Framebuffer(const FramebufferSpec &spec) : SwapChainParent(spec.swap_chain),
+                                                        RenderPassParent(spec.render_pass)
+{
     m_swap_chain_index = spec.swap_chain_index;
 
-    auto render_pass = get_render_pass();
-    auto device = render_pass->get_device();
-    auto color_image = get_swap_chain()->get_color_image();
-    auto depth_image = get_swap_chain()->get_depth_image();
-    auto extent = get_swap_chain()->get_extent();
+    const auto render_pass = get_render_pass();
+    const auto device = render_pass->get_device();
+    const auto color_image = get_swap_chain()->get_color_image();
+    const auto depth_image = get_swap_chain()->get_depth_image();
+    const auto extent = get_swap_chain()->get_extent();
 
-    std::array<VkImageView, 3> attachments = {
+    const std::array attachments = {
         color_image->get_image_view(),
         depth_image->get_image_view(),
         get_swap_chain()->get_image_view(m_swap_chain_index)
     };
 
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = render_pass->get_render_pass_handle();
-    framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    framebufferInfo.pAttachments = attachments.data();
-    framebufferInfo.width = extent.width;
-    framebufferInfo.height = extent.height;
-    framebufferInfo.layers = 1;
+    VkFramebufferCreateInfo framebuffer_info{};
+    framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_info.renderPass = render_pass->get_render_pass_handle();
+    framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+    framebuffer_info.pAttachments = attachments.data();
+    framebuffer_info.width = extent.width;
+    framebuffer_info.height = extent.height;
+    framebuffer_info.layers = 1;
 
-    if (vkCreateFramebuffer(device->logical_device_handle(), &framebufferInfo, nullptr, &m_framebuffer) != VK_SUCCESS) {
+    if (vkCreateFramebuffer(device->logical_device_handle(), &framebuffer_info,
+        nullptr, &m_framebuffer) != VK_SUCCESS)
+        {
         throw std::runtime_error("failed to create framebuffer!");
     }
 }
 
 Framebuffer::~Framebuffer() {
-    auto render_pass = get_render_pass();
-    auto device = render_pass->get_device();
+    const auto render_pass = get_render_pass();
+    const auto device = render_pass->get_device();
     vkDeviceWaitIdle(device->logical_device_handle());
     vkDestroyFramebuffer(device->logical_device_handle(), m_framebuffer, nullptr);
-}
 
-} // Framebuffer
+}

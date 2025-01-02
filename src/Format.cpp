@@ -5,10 +5,9 @@
 #include <Device.h>
 #include <Format.h>
 
-namespace Format {
-VkFormat find_supported(Device *device, const std::vector<VkFormat> &candidates, VkImageTiling tiling,
-                        VkFormatFeatureFlags features) {
-    for (VkFormat format : candidates) {
+VkFormat find_supported_format(const Device *device, const std::vector<VkFormat> &candidates,
+                               const VkImageTiling tiling, const VkFormatFeatureFlags features) {
+    for (const VkFormat format : candidates) {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(device->physical_device_handle(), format, &props);
 
@@ -20,5 +19,4 @@ VkFormat find_supported(Device *device, const std::vector<VkFormat> &candidates,
     }
 
     throw std::runtime_error("failed to find supported format!");
-}
 }

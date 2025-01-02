@@ -4,55 +4,14 @@
 
 #ifndef VERTEXBUFFER_H
 #define VERTEXBUFFER_H
+
 #include <Buffer.h>
 #include <Device.h>
 #include <Model.h>
 #include <StagingBuffer.h>
 #include <Vertex.h>
-#include <__ranges/elements_view.h>
-#include <__ranges/views.h>
 
-namespace VertexBuffer {
-
-struct Spec {
-    Device* device;
-    VkCommandPool command_pool;
-    std::vector<const char*> models;
-};
-
-class VertexBuffer : public DeviceParent {
-public:
-    VertexBuffer(Spec& spec);
-    ~VertexBuffer();
-
-    [[nodiscard]] VkBuffer get_vertex_handle() const { return m_vertex_buffer; }
-    [[nodiscard]] VkDeviceMemory get_vertex_memory_handle() const { return m_vertex_memory; }
-    [[nodiscard]] VkBuffer get_index_handle() const { return m_index_buffer; }
-    [[nodiscard]] VkDeviceMemory get_index_memory_handle() const { return m_index_memory; }
-    [[nodiscard]] size_t get_vertex_offset(size_t index) const { return m_vertex_offset[index]; }
-    [[nodiscard]] size_t get_index_offset(size_t index) const { return m_index_offset[index]; }
-    [[nodiscard]] size_t get_index_count(size_t index) const { return m_index_count[index]; }
-private:
-    std::vector<size_t> m_vertex_offset;
-    std::vector<size_t> m_index_offset;
-    std::vector<size_t> m_index_count;
-    VkBuffer m_vertex_buffer;
-    VkDeviceMemory m_vertex_memory;
-    VkBuffer m_index_buffer;
-    VkDeviceMemory m_index_memory;
-};
-
-class VertexBufferParent {
-public:
-    explicit VertexBufferParent(VertexBuffer* vertex_buffer) {m_vertex_buffer = vertex_buffer;}
-    [[nodiscard]] VertexBuffer* get_vertex_buffer() const {return m_vertex_buffer;}
-private:
-    VertexBuffer* m_vertex_buffer;
-};
-
-} // VertexBuffer
-
-class VertexBuffer2 {
+class VertexBuffer {
 public:
     struct ModelPosition {
         size_t vertex_offset;
@@ -60,12 +19,13 @@ public:
         size_t index_count;
     };
 
-    VertexBuffer2(const std::shared_ptr<Device> &device, VkCommandPool command_pool,
-                  const std::vector<Model*> &models) : m_device(device) {
+    VertexBuffer(const std::shared_ptr<Device> &device, VkCommandPool command_pool,
+                  const std::vector<Model*> &models) : m_device(device)
+    {
         std::vector<char> vertices;
         std::vector<uint32_t> indices;
         for (const auto& model : models) {
-            auto loaded_model = model->get_loaded_model();
+            const auto loaded_model = model->get_loaded_model();
             m_position[model->get_kind()] = {
                 .vertex_offset = vertices.size(),
                 .index_offset = indices.size(),
@@ -77,13 +37,13 @@ public:
         }
 
         {
-            VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
+            const VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
 
             StagingBufferSpec staging_spec {};
             staging_spec.device = m_device.get();
             staging_spec.data = vertices.data();
             staging_spec.size = buffer_size;
-            auto staging_buffer = new StagingBuffer(staging_spec);
+            const auto staging_buffer = new StagingBuffer(staging_spec);
 
             m_vertex_buffer = Buffer::create_buffer(m_device.get(), buffer_size,
                                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -95,13 +55,13 @@ public:
         }
 
         {
-            VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
+            const VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
 
             StagingBufferSpec staging_spec {};
             staging_spec.device = m_device.get();
             staging_spec.data = indices.data();
             staging_spec.size = buffer_size;
-            auto staging_buffer = new StagingBuffer(staging_spec);
+            const auto staging_buffer = new StagingBuffer(staging_spec);
 
             m_index_buffer = Buffer::create_buffer(m_device.get(), buffer_size,
                                                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
@@ -112,8 +72,8 @@ public:
         }
     }
 
-    ~VertexBuffer2() {
-        auto device = m_device.get();
+    ~VertexBuffer() {
+        const auto device = m_device.get();
         vkDestroyBuffer(device->logical_device_handle(), m_index_buffer, nullptr);
         vkFreeMemory(device->logical_device_handle(), m_index_memory, nullptr);
 

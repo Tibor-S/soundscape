@@ -8,12 +8,12 @@
 #include <vulkan/vulkan.hpp>
 
 
-namespace Buffer {
-
-VkBuffer create_buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usage);
-VkDeviceMemory bind_buffer(Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties);
-void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
-                 VkDeviceSize size);
-} // Buffer
+class Buffer {
+public:
+    static VkBuffer create_buffer(const Device* device, VkDeviceSize size, VkBufferUsageFlags usage);
+    static VkDeviceMemory bind_buffer(const Device* device, VkBuffer buffer_handle, VkMemoryPropertyFlags properties);
+    static void copy_buffer(Device *device, VkCommandPool command_pool, VkBuffer src_buffer, VkBuffer dst_buffer,
+                            VkDeviceSize size);
+};
 
 #endif //BUFFER_H

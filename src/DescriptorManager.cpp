@@ -3,11 +3,10 @@
 //
 
 #include <DescriptorManager.h>
-#include <iostream>
-namespace Descriptor {
-// DescriptorManager
 
-DescriptorManager::DescriptorManager(DescPoolSpec &spec, size_t max_sets) : DeviceParent(spec.device) {
+#include <iostream>
+
+DescriptorManager::DescriptorManager(DescriptorPoolSpec &spec, const size_t max_sets) : DeviceParent(spec.device) {
     m_desc_bindings = spec.desc_bindings;
     std::vector<VkDescriptorPoolSize> poolSizes{};
     poolSizes.resize(spec.desc_bindings.size());
@@ -77,7 +76,7 @@ DescriptorManager::~DescriptorManager() {
 }
 
 
-std::vector<size_t> DescriptorManager::get_unique_descriptors(size_t count) {
+std::vector<size_t> DescriptorManager::get_unique_descriptors(const size_t count) {
     std::vector<size_t> unique_descriptors;
 
     for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
@@ -107,19 +106,15 @@ std::vector<size_t> DescriptorManager::get_unique_descriptors(size_t count) {
     return unique_descriptors;
 }
 
-// Device::Device* DescriptorManager::device() const {
-//     return m_spec.device;
-// }
-
-VkDescriptorSetLayout DescriptorManager::get_layout_handle() {
+VkDescriptorSetLayout DescriptorManager::get_layout_handle() const {
     return m_descriptor_set_layout;
 }
 
-VkDescriptorSet DescriptorManager::descriptor_handle(size_t index) const {
+VkDescriptorSet DescriptorManager::descriptor_handle(const size_t index) const {
     return m_descriptor_sets[index];
 }
 
-Type DescriptorManager::descriptor_type(size_t binding) const {
+DescriptorType DescriptorManager::descriptor_type(const size_t binding) const {
     for (auto & desc_binding : m_desc_bindings) {
         if (desc_binding.binding == binding) {
             return desc_binding.type;
@@ -128,15 +123,15 @@ Type DescriptorManager::descriptor_type(size_t binding) const {
     throw std::runtime_error("binding mismatch!");
 }
 
-Updater* DescriptorManager::get_updater() {
-    auto* updater = new Updater(this);
+DescriptorUpdater* DescriptorManager::get_updater() {
+    auto* updater = new DescriptorUpdater(this);
 
     return updater;
 }
 
 // Updater
 
-void Updater::update() {
+void DescriptorUpdater::update() {
     std::vector<VkDescriptorBufferInfo> buffers_info {};
     std::vector<VkDescriptorImageInfo> images_info {};
     std::vector<VkWriteDescriptorSet> writes_info {};
@@ -198,7 +193,10 @@ void Updater::update() {
         writes_info.data(), 0, nullptr);
 }
 
-Updater* Updater::update_buffer(size_t index, size_t binding, VkBuffer buffer_handle, size_t offset, size_t size) {
+DescriptorUpdater *DescriptorUpdater::update_buffer(const size_t index, const size_t binding,
+                                                          VkBuffer buffer_handle, const size_t offset,
+                                                          const size_t size)
+{
     m_buffers.push_back({
         .descriptor_index = index,
         .binding = binding,
@@ -210,7 +208,9 @@ Updater* Updater::update_buffer(size_t index, size_t binding, VkBuffer buffer_ha
     return this;
 }
 
-Updater* Updater::update_image(size_t index, size_t binding, VkImageView image_view_handle, VkSampler sampler_handle) {
+DescriptorUpdater *DescriptorUpdater::update_image(const size_t index, const size_t binding,
+                                                         VkImageView image_view_handle, VkSampler sampler_handle)
+{
     m_images.push_back({
         .descriptor_index = index,
         .binding = binding,
@@ -219,5 +219,4 @@ Updater* Updater::update_image(size_t index, size_t binding, VkImageView image_v
     });
 
     return this;
-}
 }

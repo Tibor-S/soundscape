@@ -19,69 +19,16 @@ enum SpriteKind {
     COVER_ART_SPRITE
 };
 
-inline std::optional<Descriptor2::Kind> get_descriptor_kind(SpriteKind kind) {
-    switch (kind) {
-        case SpriteKind::VIKING_ROOM:
-            return VikingRoom::descriptor_set_kind();
-        case SpriteKind::BAR_SPRITE:
-            return BarSprite::descriptor_set_kind();
-        case SpriteKind::BACK_DROP_SPRITE:
-            return BackDropSprite::descriptor_set_kind();
-        case SpriteKind::COVER_ART_SPRITE:
-            return CoverArtSprite::descriptor_set_kind();
-    }
-    throw std::invalid_argument("Invalid sprite kind");
-}
-inline std::optional<Pipeline2::Kind> get_pipeline_kind(SpriteKind kind) {
-    switch (kind) {
-        case SpriteKind::VIKING_ROOM:
-            return VikingRoom::pipeline_kind();
-        case SpriteKind::BAR_SPRITE:
-            return BarSprite::pipeline_kind();
-        case SpriteKind::BACK_DROP_SPRITE:
-            return BackDropSprite::pipeline_kind();
-        case SpriteKind::COVER_ART_SPRITE:
-            return CoverArtSprite::pipeline_kind();
-    }
-    throw std::invalid_argument("Invalid sprite kind");
-}
-inline std::optional<Model::Kind> get_model_kind(SpriteKind kind) {
-    switch (kind) {
-        case SpriteKind::VIKING_ROOM:
-            return VikingRoom::model_kind();
-        case SpriteKind::BAR_SPRITE:
-            return BarSprite::model_kind();
-        case SpriteKind::BACK_DROP_SPRITE:
-            return BackDropSprite::model_kind();
-        case SpriteKind::COVER_ART_SPRITE:
-            return CoverArtSprite::model_kind();
-    }
-    throw std::invalid_argument("Invalid sprite kind");
-}
-inline Sprite3* construct_sprite(std::shared_ptr<Device> &device, TextureManager &texture_manager,
-                                 PipelineManager &pipeline_manager,
-                                 UniformBufferManager &uniform_buffer_manager,
-                                 std::shared_ptr<VertexBuffer2> &vertex_buffer,
-                                 std::shared_ptr<DescriptorPool> &descriptor_pool,
-                                 size_t image_count, SpriteKind kind)
-{
-    switch (kind) {
-        case SpriteKind::VIKING_ROOM:
-            return new VikingRoom(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
-            descriptor_pool, image_count);
-        case SpriteKind::BAR_SPRITE:
-            return new BarSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
-            descriptor_pool, image_count);
-        case SpriteKind::BACK_DROP_SPRITE:
-            return new BackDropSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
-            descriptor_pool, image_count);
-        case SpriteKind::COVER_ART_SPRITE:
-            return new CoverArtSprite(device, texture_manager, pipeline_manager, uniform_buffer_manager, vertex_buffer,
-                                  descriptor_pool, image_count);
+std::optional<Descriptor::Kind> get_descriptor_kind(SpriteKind kind);
 
-    }
-    throw std::invalid_argument("Invalid sprite kind");
-}
+std::optional<Pipeline::Kind> get_pipeline_kind(SpriteKind kind);
+
+std::optional<Model::Kind> get_model_kind(SpriteKind kind);
+
+Sprite* construct_sprite(const std::shared_ptr<Device> &device, TextureManager &texture_manager,
+                         PipelineManager &pipeline_manager, UniformBufferManager &uniform_buffer_manager,
+                         const std::shared_ptr<VertexBuffer> &vertex_buffer,
+                         std::shared_ptr<DescriptorPool> &descriptor_pool, size_t image_count, SpriteKind kind);
 
 class InterFrame {
 public:
@@ -103,9 +50,7 @@ public:
 
         vkDestroyCommandPool(m_device->logical_device_handle(), m_command_pool, nullptr);
 
-        // vkDestroyDevice(device, nullptr);
         m_device->destroy();
-        // delete m_device;
 
         if (enable_validation_layers) {
             auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
@@ -129,7 +74,7 @@ public:
 
     [[nodiscard]] size_t get_image_count() const { return m_max_frames_in_flight; }
     [[nodiscard]] size_t current_frame() const { return m_current_frame; }
-    [[nodiscard]] Sprite3* get_sprite(const char* sprite_name) { return m_sprites[sprite_name]; }
+    [[nodiscard]] Sprite* get_sprite(const char* sprite_name) { return m_sprites[sprite_name]; }
     [[nodiscard]] std::shared_ptr<Camera> get_camera() const { return m_uniform_buffer_manager->acquire_camera(); }
 private:
     size_t m_max_frames_in_flight;
@@ -143,7 +88,7 @@ private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 
     std::shared_ptr<Device> m_device;
-    std::shared_ptr<RenderTarget::RenderTarget> m_render_target;
+    std::shared_ptr<RenderTarget> m_render_target;
     VkCommandPool m_command_pool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> m_render_buffers;
 
@@ -151,22 +96,16 @@ private:
     std::vector<VkSemaphore> m_render_finished_semaphores;
     std::vector<VkFence> m_in_flight_fences;
 
-    std::map<const char*, Sprite3*> m_sprites;
+    std::map<const char*, Sprite*> m_sprites;
     std::shared_ptr<TextureManager> m_texture_manager;
     std::shared_ptr<DescriptorLayoutManager> m_descriptor_layout_manager;
     std::shared_ptr<PipelineLayoutManager> m_pipeline_layout_manager;
     std::shared_ptr<PipelineManager> m_pipeline_manager;
     std::shared_ptr<UniformBufferManager> m_uniform_buffer_manager;
-    // std::map<Descriptor2::Kind, std::shared_ptr<DescriptorLayout>> m_descriptor_layout;
-    // std::map<Descriptor2::Kind, std::shared_ptr<PipelineLayout2>> m_pipeline_layout;
-    // std::map<Pipeline2::Kind, std::shared_ptr<Pipeline2>> m_pipeline;
-    // std::map<Texture::Kind, std::shared_ptr<TextureImage2>> m_textures;
-
-    // std::shared_ptr<Camera> m_camera;
 
     void record_render_buffer(VkCommandBuffer command_buffer, size_t index);
     static void framebuffer_resize_callback(GLFWwindow* window, int width, int height) {
-        auto visual = reinterpret_cast<Visual*>(glfwGetWindowUserPointer(window));
+        const auto visual = static_cast<Visual*>(glfwGetWindowUserPointer(window));
         visual->m_window_resized = true;
     }
     static void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info) {
@@ -208,10 +147,9 @@ private:
     }
     static std::vector<const char*> get_required_extensions() {
         uint32_t glfw_extension_count = 0;
-        const char** glfw_extensions;
-        glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+        const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
-        std::vector<const char*> extensions(glfw_extensions, glfw_extensions + glfw_extension_count);
+        std::vector extensions(glfw_extensions, glfw_extensions + glfw_extension_count);
 
         if (enable_validation_layers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -240,7 +178,7 @@ private:
         return VK_FALSE;
     }
     void update_camera_projection() const {
-        auto camera = get_camera();
+        const auto camera = get_camera();
         auto data = camera->get_data();
         const auto width = static_cast<float>(m_render_target->get_swap_chain()->get_extent().width);
         const auto height = static_cast<float>(m_render_target->get_swap_chain()->get_extent().height);

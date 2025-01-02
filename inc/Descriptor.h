@@ -4,18 +4,13 @@
 
 #ifndef DESCRIPTOR_H
 #define DESCRIPTOR_H
+
 #include <DescriptorManager.h>
 #include <SamplerImage.h>
 #include <UniformBuffer.h>
 #include <Vertex.h>
 
-
-class ModelDescriptor {
-public:
-    glm::mat4 model;
-};
-
-class Descriptor2 {
+class Descriptor {
 public:
     enum Binding {
         CAMERA,
@@ -31,17 +26,17 @@ public:
         COVER_ART
     };
 
-    explicit Descriptor2(Kind kind) {
+    explicit Descriptor(const Kind kind) {
         m_kind = kind;
         set_bindings();
     }
-    ~Descriptor2() = default;
+    ~Descriptor() = default;
 
     [[nodiscard]] Kind get_kind() const { return m_kind; }
-    [[nodiscard]] Binding get_binding(size_t index) const { return m_bindings[index]; }
-    [[nodiscard]] VkShaderStageFlags get_shader_stages(size_t index) const { return m_shader_stages[index]; }
+    [[nodiscard]] Binding get_binding(const size_t index) const { return m_bindings[index]; }
+    [[nodiscard]] VkShaderStageFlags get_shader_stages(const size_t index) const { return m_shader_stages[index]; }
     [[nodiscard]] size_t get_binding_count() const { return m_bindings.size(); }
-    [[nodiscard]] static VkDescriptorType binding_type(Binding binding) {
+    [[nodiscard]] static VkDescriptorType binding_type(const Binding binding) {
         switch (binding) {
             case CAMERA:
             case MODEL:
@@ -125,9 +120,9 @@ private:
     }
 };
 
-class DescriptorLayout : public Descriptor2 {
+class DescriptorLayout : public Descriptor {
 public:
-    DescriptorLayout(const std::shared_ptr<Device>& device, Kind kind) : Descriptor2(kind), m_device(device) {
+    DescriptorLayout(const std::shared_ptr<Device>& device, const Kind kind) : Descriptor(kind), m_device(device) {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
         bindings.resize(get_binding_count());
         for (size_t i = 0; i < get_binding_count(); i++) {
@@ -181,13 +176,13 @@ public:
 private:
     std::shared_ptr<Device> m_device;
     VkCommandPool m_command_pool;
-    std::map<Descriptor2::Kind, std::shared_ptr<DescriptorLayout>> m_descriptor_layout;
+    std::map<Descriptor::Kind, std::shared_ptr<DescriptorLayout>> m_descriptor_layout;
 };
 
-class DescriptorPool : public Descriptor2 {
+class DescriptorPool : public Descriptor {
 public:
     DescriptorPool(const std::shared_ptr<Device> &device, std::shared_ptr<DescriptorLayout> &layout, Kind kind,
-                   size_t max_sets) : Descriptor2(kind), m_device(device), m_descriptor_layout(layout)
+                   size_t max_sets) : Descriptor(kind), m_device(device), m_descriptor_layout(layout)
     {
         std::map<Binding, uint32_t> binding_count {};
         for (size_t i = 0; i < get_binding_count(); i++) {
@@ -220,7 +215,6 @@ public:
     }
     ~DescriptorPool() {
         vkDestroyDescriptorPool(m_device->logical_device_handle(), m_descriptor_pool, nullptr);
-        // delete m_device;
     }
 
     void free_descriptor_set(VkDescriptorSet descriptor_set) const {
@@ -234,7 +228,7 @@ public:
                                write_info.data(), 0, nullptr);
     }
 
-    std::vector<VkDescriptorSet> allocate_descriptor_sets(const size_t count) const {
+    [[nodiscard]] std::vector<VkDescriptorSet> allocate_descriptor_sets(const size_t count) const {
         std::vector<VkDescriptorSet> descriptor_sets{};
         descriptor_sets.resize(count);
         const std::vector layouts(count, m_descriptor_layout->get_handle());
@@ -250,25 +244,23 @@ public:
 
         return descriptor_sets;
     }
-    // [[nodiscard]] free_set(DescriptorSet*)
 private:
     std::shared_ptr<Device> m_device;
     std::shared_ptr<DescriptorLayout> m_descriptor_layout;
     VkDescriptorPool m_descriptor_pool = VK_NULL_HANDLE;
 };
 
-
-
-class DescriptorSet : public Descriptor2 {
+class DescriptorSet : public Descriptor {
 public:
-    explicit DescriptorSet(std::shared_ptr<DescriptorPool> &pool, VkDescriptorSet descriptor_set) : Descriptor2(
-        pool->get_kind()), m_pool(pool), m_descriptor_set(descriptor_set) {}
+    explicit DescriptorSet(const std::shared_ptr<DescriptorPool> &pool, VkDescriptorSet descriptor_set) : Descriptor(
+            pool->get_kind()), m_pool(pool), m_descriptor_set(descriptor_set) {}
     ~DescriptorSet() {
         m_pool->free_descriptor_set(m_descriptor_set);
-        // delete m_pool;
     };
 
-    static std::vector<std::shared_ptr<DescriptorSet>> create_descriptor_sets(std::shared_ptr<DescriptorPool> &pool, size_t count) {
+    static std::vector<std::shared_ptr<DescriptorSet> > create_descriptor_sets(
+        std::shared_ptr<DescriptorPool> &pool, const size_t count)
+    {
         const auto handles = pool->allocate_descriptor_sets(count);
         std::vector<std::shared_ptr<DescriptorSet>> descriptor_sets{};
         descriptor_sets.resize(count);
@@ -302,7 +294,7 @@ public:
         m_descriptor_set->update(m_write_info);
     }
 
-    void update_buffer(size_t binding, const UniformBuffer::UniformBuffer& buffer) {
+    void update_buffer(const size_t binding, const UniformBuffer& buffer) {
         const VkDescriptorBufferInfo buffer_info{
             .buffer = buffer.get_handle(),
             .offset = 0,
@@ -316,7 +308,7 @@ public:
         write_info.dstSet = m_descriptor_set->get_descriptor_set();
         write_info.dstBinding = static_cast<uint32_t>(binding);
         write_info.dstArrayElement = 0;
-        write_info.descriptorType = Descriptor2::binding_type(descriptor_binding);
+        write_info.descriptorType = Descriptor::binding_type(descriptor_binding);
         write_info.descriptorCount = 1;
         write_info.pBufferInfo = &m_buffer_info[binding];
         m_write_info[binding] = write_info;
@@ -336,7 +328,7 @@ public:
         write_info.dstSet = m_descriptor_set->get_descriptor_set();
         write_info.dstBinding = static_cast<uint32_t>(binding);
         write_info.dstArrayElement = 0;
-        write_info.descriptorType = Descriptor2::binding_type(descriptor_binding);
+        write_info.descriptorType = Descriptor::binding_type(descriptor_binding);
         write_info.descriptorCount = 1;
         write_info.pImageInfo = &m_image_info[binding];
         m_write_info[binding] = write_info;

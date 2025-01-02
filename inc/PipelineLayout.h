@@ -4,40 +4,15 @@
 
 #ifndef PIPELINELAYOUT_H
 #define PIPELINELAYOUT_H
-#include <Descriptor.h>
+
 #include <vulkan/vulkan.hpp>
-#include <DescriptorManager.h>
 
-namespace PipelineLayout {
+#include <Descriptor.h>
 
-struct Spec {
-    Descriptor::DescriptorManager* descriptor_manager;
-};
-
-class PipelineLayout : public Descriptor::DescriptorManagerParent {
+class PipelineLayout : public Descriptor {
 public:
-    explicit PipelineLayout(Spec& spec);
-    ~PipelineLayout();
-
-    VkPipelineLayout get_handle() const { return m_pipeline_layout; }
-private:
-    VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
-};
-
-class PipelineLayoutParent {
-public:
-    explicit PipelineLayoutParent(PipelineLayout* pipeline_layout) { m_pipeline_layout = pipeline_layout; }
-    PipelineLayout* get_pipeline_layout() const { return m_pipeline_layout; }
-private:
-    PipelineLayout* m_pipeline_layout;
-};
-
-} // PipelineLayout
-
-class PipelineLayout2 : public Descriptor2 {
-public:
-    PipelineLayout2(const std::shared_ptr<Device> &device,
-                    const std::shared_ptr<DescriptorLayout> &layout) : Descriptor2(layout->get_kind()), m_device(device),
+    PipelineLayout(const std::shared_ptr<Device> &device,
+                    const std::shared_ptr<DescriptorLayout> &layout) : Descriptor(layout->get_kind()), m_device(device),
                                                                        m_layout(layout)
     {
         VkPipelineLayoutCreateInfo pipeline_layout_info{};
@@ -52,7 +27,7 @@ public:
             throw std::runtime_error("failed to create pipeline layout!");
         }
     };
-    ~PipelineLayout2() {
+    ~PipelineLayout() {
         vkDestroyPipelineLayout(m_device->logical_device_handle(), m_pipeline_layout, nullptr);
     }
 
@@ -72,10 +47,10 @@ public:
                                                         m_command_pool(command_pool) {
     }
 
-    [[nodiscard]] std::shared_ptr<PipelineLayout2> acquire_pipeline_layout(PipelineLayout2::Kind kind) {
+    [[nodiscard]] std::shared_ptr<PipelineLayout> acquire_pipeline_layout(PipelineLayout::Kind kind) {
         if (!m_pipeline_layout.contains(kind)) {
             auto descriptor_layout = m_descriptor_layout_manager->acquire_descriptor_layout(kind);
-            const auto pipeline_layout = std::make_shared<PipelineLayout2>(m_device, descriptor_layout);
+            const auto pipeline_layout = std::make_shared<PipelineLayout>(m_device, descriptor_layout);
             m_pipeline_layout[kind] = pipeline_layout;
         }
         return m_pipeline_layout[kind];
@@ -84,7 +59,7 @@ private:
     std::shared_ptr<Device> m_device;
     std::shared_ptr<DescriptorLayoutManager> m_descriptor_layout_manager;
     VkCommandPool m_command_pool;
-    std::map<PipelineLayout2::Kind, std::shared_ptr<PipelineLayout2>> m_pipeline_layout;
+    std::map<PipelineLayout::Kind, std::shared_ptr<PipelineLayout>> m_pipeline_layout;
 };
 
 #endif //PIPELINELAYOUT_H

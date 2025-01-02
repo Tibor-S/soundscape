@@ -58,40 +58,11 @@ LoadObjModel<T>::LoadObjModel(const char* obj_path) : LoadModel(sizeof(T)){
             }
 
             object.add_face(face, face_normal, vertex_group_names[shape.name]);
-
-            // if (!unique_vertices.contains(source_vertex)) {
-            //     unique_vertices[source_vertex] = static_cast<uint32_t>(unique_vertices.size());
-            //     // append_vertex(source_vertex);
-            //     vertices.push_back(source_vertex);
-            //     normals.emplace_back(0.0f, 0.0f, 0.0f);
-            //     vertex_groups.emplace_back(vertex_group_names[shape.name], -1);
-            //     // auto serialized_vertex = reinterpret_cast<char*>(&vertex);
-            //     // for (int i = 0; i < sizeof(vertex); i++) {
-            //     //     vertices->push_back(serialized_vertex[i]);
-            //     // }
-            // } else if (vertex_groups[unique_vertices[source_vertex]].x !=  vertex_group_names[shape.name]) {
-            //     // if (vertex_groups[unique_vertices[source_vertex]].y == -1) {
-            //     //
-            //     // }
-            // }
-
-            // normals[unique_vertices[source_vertex]].x += attrib.normals[3 * index.normal_index + 0];
-            // normals[unique_vertices[source_vertex]].y += attrib.normals[3 * index.normal_index + 1];
-            // normals[unique_vertices[source_vertex]].z += attrib.normals[3 * index.normal_index + 2];
-            // append_index(unique_vertices[source_vertex]);
-            // indices->push_back(unique_vertices[vertex]);
         }
     }
 
     auto vertices = object.get_vertices<T>();
     for (size_t i = 0; i < vertices.size(); i++) {
-        // SourceVertex source_vertex = vertices[i];
-        // source_vertex.normal = glm::normalize(normals[i]);
-        // std::cout << "t.x: " << source_vertex.tex_coord.x << ", t.y: " << source_vertex.tex_coord.y << std::endl;
-        // std::cout << "\tonormal:\t" << normals[i].x << ", " << normals[i].y << ", " << normals[i].z << std::endl;
-        // std::cout << "\tnormal:\t" << source_vertex.normal.x << ", " << source_vertex.normal.y << ", " << source_vertex.normal.z << std::endl;
-        // T vertex(source_vertex);
-
         append_vertex(vertices[i]);
     }
     for (auto index : object.get_indices()) {

@@ -7,8 +7,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace Format {
-VkFormat find_supported(Device *device, const std::vector<VkFormat> &candidates, VkImageTiling tiling,
-                        VkFormatFeatureFlags features);
-}
+VkFormat find_supported_format(const Device *device, const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+                               VkFormatFeatureFlags features);
 #endif //FORMAT_H
