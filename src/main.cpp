@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <future>
@@ -86,144 +87,46 @@ struct ColorGroupBySaturation : ColorGroupByLight {
     }
 };
 
-class CoverArt {
+class Palette {
 public:
-    CoverArt() : m_cover_art_pixels(m_image_size) {}
-    explicit CoverArt(const size_t image_size) : m_image_size(image_size), m_cover_art_pixels(m_image_size) {}
-    ~CoverArt() {
-        if (m_reset_future_opt.has_value()) m_reset_future_opt.value().get();
-        if (m_load_future_opt.has_value()) m_load_future_opt.value().get();
-    };
+    Palette() = default;
+    virtual ~Palette() = default;
 
-    [[nodiscard]] size_t image_size() const { return m_image_size; }
-    // Make sure dst_pixels is allocated with at least the size of the image
-
-    bool try_reset(const glm::vec3 color) {
-        using namespace std::chrono_literals;
-        if (m_reset_future_opt.has_value()) {
-            if (m_reset_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
-        }
-        m_reset_future_opt = std::async(std::launch::async, &CoverArt::reset_aux, this, color);
+    virtual void generate_target(const std::vector<uint8_t> &pixels, size_t pixel_size, bool alpha_channel) {
+        auto guard = lock();
+    }
+    virtual bool try_approach_target(float factor) {
+        if (!try_lock()) return false;
+        unlock();
         return true;
     }
-    bool try_load(const std::string &url) {
-        using namespace std::chrono_literals;
-        if (m_load_future_opt.has_value()) {
-            if (m_load_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
-        }
-        m_load_future_opt = std::async(std::launch::async, &CoverArt::load_aux, this, url);
-        return true;
-        // m_load_thread = new std::thread(&CoverArt::load_aux, this, url);
-    }
-    bool try_approach(std::vector<uint8_t> &dst_pixels, ColorPalette &dst_palette,
-                                    const float factor = 0.1f)
-    {
-        if (!m_busy_mtx.try_lock()) return false;
-
-        for (size_t i = 0; i < m_image_size; i++) {
-            if (-1 <= (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) &&
-                (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) <= 1)
-            {
-                dst_pixels[i] = m_cover_art_pixels[i];
-                continue;
-            }
-            if (dst_pixels[i] != m_cover_art_pixels[i]) {
-                while (false) {}
-            }
-            const auto c_val = static_cast<float>(dst_pixels[i]);
-            const auto t_val = static_cast<float>(m_cover_art_pixels[i]);
-            auto n_val = static_cast<uint8_t>((1 - factor) * c_val + factor * t_val);
-            if (n_val == dst_pixels[i]) n_val = m_cover_art_pixels[i];
-            dst_pixels[i] = n_val;
-        }
-
-        dst_palette.dark = m_palette.dark * factor + dst_palette.dark * (1 - factor);
-        dst_palette.light = m_palette.light * factor + dst_palette.light * (1 - factor);
-        dst_palette.third = m_palette.third * factor + dst_palette.third * (1 - factor);
-        dst_palette.second = m_palette.second * factor + dst_palette.second * (1 - factor);
-        dst_palette.main = m_palette.main * factor + dst_palette.main * (1 - factor);
-
-        m_busy_mtx.unlock();
-
+    virtual bool try_reset_palette() {
+        if (!try_lock()) return false;
+        unlock();
         return true;
     }
-
-    void set_default(std::vector<uint8_t> &dst_pixels, ColorPalette &dst_palette) const {
-        dst_pixels.resize(m_image_size);
-        for (size_t i = 0; i < m_image_size; i++) dst_pixels[i] = 255;
-        dst_palette.dark = glm::vec3(1.0f);
-        dst_palette.light = glm::vec3(1.0f);
-        dst_palette.third = glm::vec3(1.0f);
-        dst_palette.second = glm::vec3(1.0f);
-        dst_palette.main = glm::vec3(1.0f);
-    }
-
+protected:
+    std::lock_guard<std::mutex> lock() {return std::lock_guard(m_mtx); }
+    bool try_lock() {return m_mtx.try_lock(); }
+    void unlock() {return m_mtx.unlock(); }
 private:
-    std::mutex m_busy_mtx;
-    size_t m_image_size = 400 * 400 * STBI_rgb_alpha;
-    std::vector<uint8_t> m_cover_art_pixels {};
-    ColorPalette m_palette = {
-        .dark = glm::vec3(1.0f),
-        .light = glm::vec3(1.0f),
-        .third = glm::vec3(1.0f),
-        .second = glm::vec3(1.0f),
-        .main = glm::vec3(1.0f),
-    };
+    std::mutex m_mtx;
+};
 
-    // Threads
-    std::optional<std::future<void>> m_reset_future_opt {};
-    std::optional<std::future<void>> m_load_future_opt {};
-    // std::thread* m_reset_thread = nullptr;
-    // std::thread* m_load_thread = nullptr;
 
-    void reset_aux(const glm::vec3 color) {
-        std::lock_guard guard(m_busy_mtx);
+class StandardPalette : public Palette {
+public:
+    static constexpr ColorPalette DEFAULT = {glm::vec3(1.0f),glm::vec3(1.0f),glm::vec3(1.0f),glm::vec3(1.0f),glm::vec3(1.0f)};
 
-        for (int i = 0; i < m_image_size; i += 4) {
-            m_cover_art_pixels[i + 0] = static_cast<uint8_t>(color.r * 255);
-            m_cover_art_pixels[i + 1] = static_cast<uint8_t>(color.g * 255);
-            m_cover_art_pixels[i + 2] = static_cast<uint8_t>(color.b * 255);
-            m_cover_art_pixels[i + 3] = 255;
-        }
-        m_palette.dark = glm::vec3(1.0f);
-        m_palette.light = glm::vec3(1.0f);
-        m_palette.third = glm::vec3(1.0f);
-        m_palette.second = glm::vec3(1.0f);
-        m_palette.main = glm::vec3(1.0f);
-    }
-    void load_aux(const std::string &url) {
-        std::lock_guard guard(m_busy_mtx);
+    explicit StandardPalette(const uint8_t relevant_bits) : m_relevant_bits(relevant_bits) {}
+    ~StandardPalette() override = default;
 
-        const auto res_data = Communication::load_cover_art(url);
-        int w, h, c = 0;
-        uint8_t *pixel_data = stbi_load_from_memory(reinterpret_cast<stbi_uc const *>(res_data.c_str()),
-                                                    static_cast<int>(res_data.size()), &w, &h, &c,
-                                                    STBI_rgb_alpha);
-        // NOTE: EVEN IF PIXEL DATA IS RGBA `c == STBI_rgb_alpha` IS NOT NECESSARILY TRUE?
-        // TODO: CHECK ACTUAL CHANNEL COUNT AND ADJUST FOR LOOP
-        const auto len = std::min(static_cast<int>(m_image_size), w * h * STBI_rgb_alpha);
-        memcpy(m_cover_art_pixels.data(), pixel_data, len);
-        // auto data_ptr = pixel_data;
-        // for (int i = 0; i < len; i++) {
-        //     if (i % 4 == 3 && *data_ptr != 0xFF) {
-        //         using namespace std;
-        //         cout << "\tWARNING" << endl;
-        //     }
-        //     m_cover_art_pixels[i] = *data_ptr++;
-        // }
-
-        stbi_image_free(pixel_data);
-
-        new_palette(m_cover_art_pixels, m_palette, 4);
-    }
-
-    static void new_palette(const std::vector<uint8_t> &pixels, ColorPalette &palette, uint8_t relevant_bits,
-                            const bool alpha_channel = true)
-    {
+    void generate_target(const std::vector<uint8_t> &pixels, size_t pixel_size, bool alpha_channel) override {
+        auto guard = lock();
         std::map<std::array<uint8_t, 3>, size_t> bin_count {};
         std::map<std::array<uint8_t, 3>, glm::vec3> avg_color {};
-        const uint16_t manhattan_max = (1 << relevant_bits) + (1 << relevant_bits) + (1 << relevant_bits) - 3;
-        const uint16_t dl_manhattan_max = 1 << (relevant_bits - 1);
+        const uint16_t manhattan_max = (1 << m_relevant_bits) + (1 << m_relevant_bits) + (1 << m_relevant_bits) - 3;
+        const uint16_t dl_manhattan_max = 1 << (m_relevant_bits - 1);
         const size_t offset = alpha_channel ? 4 : 3;
 
         std::array<uint8_t, 3> d_bin = {0,0,0};
@@ -241,9 +144,9 @@ private:
             const auto green = pixels[i+1];
             const auto blue = pixels[i+2];
 
-            const uint8_t red_bin = red >> (8 - relevant_bits);
-            const uint8_t green_bin = green >> (8 - relevant_bits);
-            const uint8_t blue_bin = blue >> (8 - relevant_bits);
+            const uint8_t red_bin = red >> (8 - m_relevant_bits);
+            const uint8_t green_bin = green >> (8 - m_relevant_bits);
+            const uint8_t blue_bin = blue >> (8 - m_relevant_bits);
 
             const uint16_t d_manhattan = static_cast<uint16_t>(red_bin) +
                                             static_cast<uint16_t>(green_bin) +
@@ -314,11 +217,155 @@ private:
         if (t_bin_count == 0) t_bin = s_bin;
         if (l_bin_count == 0) l_bin = t_bin;
 
-        palette.dark = avg_color[d_bin];
-        palette.light = avg_color[l_bin];
-        palette.third = avg_color[t_bin];
-        palette.second = avg_color[s_bin];
-        palette.main = avg_color[m_bin];
+        m_target.dark = avg_color[d_bin];
+        m_target.light = avg_color[l_bin];
+        m_target.third = avg_color[t_bin];
+        m_target.second = avg_color[s_bin];
+        m_target.main = avg_color[m_bin];
+    }
+    bool try_approach_target(const float factor) override {
+        if (!try_lock()) return false;
+        m_palette.dark = m_target.dark * factor + m_palette.dark * (1 - factor);
+        m_palette.light = m_target.light * factor + m_palette.light * (1 - factor);
+        m_palette.third = m_target.third * factor + m_palette.third * (1 - factor);
+        m_palette.second = m_target.second * factor + m_palette.second * (1 - factor);
+        m_palette.main = m_target.main * factor + m_palette.main * (1 - factor);
+        unlock();
+        return true;
+    }
+    [[nodiscard]] std::optional<ColorPalette> try_get_palette() {
+        if (!try_lock()) return {};
+        auto palette = m_palette;
+        unlock();
+        return palette;
+    }
+    bool try_set_palette(const ColorPalette& palette) {
+        if (!try_lock()) return false;
+        m_palette = palette;
+        m_target = palette;
+        unlock();
+        return true;
+    }
+    bool try_reset_palette() override {
+        if (!try_lock()) return false;
+        m_palette = DEFAULT;
+        m_target = DEFAULT;
+        unlock();
+        return true;
+    }
+private:
+    uint8_t m_relevant_bits = 1;
+    ColorPalette m_palette {};
+    ColorPalette m_target {};
+
+};
+
+class CoverArt {
+public:
+    CoverArt(const size_t image_size, const std::shared_ptr<Palette> &palette) : m_cover_art_pixels(image_size),
+                                                                                 m_palette(palette),
+                                                                                 m_image_size(image_size) {
+    }
+    // explicit CoverArt(const size_t image_size) : m_image_size(image_size), m_cover_art_pixels(m_image_size) {}
+    ~CoverArt() {
+        if (m_reset_future_opt.has_value()) m_reset_future_opt.value().get();
+        if (m_load_future_opt.has_value()) m_load_future_opt.value().get();
+    };
+
+    [[nodiscard]] size_t image_size() const { return m_image_size; }
+
+    bool try_reset(const glm::vec3 color) {
+        using namespace std::chrono_literals;
+        if (m_reset_future_opt.has_value()) {
+            if (m_reset_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
+        }
+        m_reset_future_opt = std::async(std::launch::async, &CoverArt::reset_aux, this, color);
+        return true;
+    }
+    bool try_load(const std::string &url) {
+        using namespace std::chrono_literals;
+        if (m_load_future_opt.has_value()) {
+            if (m_load_future_opt.value().wait_for(0ms) != std::future_status::ready) return false;
+        }
+        m_load_future_opt = std::async(std::launch::async, &CoverArt::load_aux, this, url);
+        return true;
+    }
+    // Make sure dst_pixels is allocated with at least the size of the image
+    bool try_approach(std::vector<uint8_t> &dst_pixels, const float factor = 0.1f)
+    {
+        if (!m_busy_mtx.try_lock()) return false;
+
+        for (size_t i = 0; i < m_image_size; i++) {
+            if (-1 <= (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) &&
+                (static_cast<int16_t>(dst_pixels[i]) - static_cast<int16_t>(m_cover_art_pixels[i])) <= 1)
+            {
+                dst_pixels[i] = m_cover_art_pixels[i];
+                continue;
+            }
+            if (dst_pixels[i] != m_cover_art_pixels[i]) {
+                while (false) {}
+            }
+            const auto c_val = static_cast<float>(dst_pixels[i]);
+            const auto t_val = static_cast<float>(m_cover_art_pixels[i]);
+            auto n_val = static_cast<uint8_t>((1 - factor) * c_val + factor * t_val);
+            if (n_val == dst_pixels[i]) n_val = m_cover_art_pixels[i];
+            dst_pixels[i] = n_val;
+        }
+
+
+        m_busy_mtx.unlock();
+
+        return m_palette->try_approach_target(factor);
+    }
+    void set_default(std::vector<uint8_t>& dst_pixels, const glm::vec3 color) {
+        dst_pixels.resize(m_image_size);
+        for (size_t i = 0; i < m_image_size; i += 4) {
+            dst_pixels[i + 0] = static_cast<uint8_t>(color.r * 255);
+            dst_pixels[i + 1] = static_cast<uint8_t>(color.g * 255);
+            dst_pixels[i + 2] = static_cast<uint8_t>(color.b * 255);
+            dst_pixels[i + 3] = 255;
+        }
+    }
+
+private:
+    std::mutex m_busy_mtx;
+    size_t m_image_size = 400 * 400 * STBI_rgb_alpha;
+    std::vector<uint8_t> m_cover_art_pixels {};
+    std::shared_ptr<Palette> m_palette;
+
+    // Threads
+    std::optional<std::future<void>> m_reset_future_opt {};
+    std::optional<std::future<void>> m_load_future_opt {};
+    // std::thread* m_reset_thread = nullptr;
+    // std::thread* m_load_thread = nullptr;
+
+    void reset_aux(const glm::vec3 color) {
+        std::lock_guard guard(m_busy_mtx);
+
+        for (int i = 0; i < m_image_size; i += 4) {
+            m_cover_art_pixels[i + 0] = static_cast<uint8_t>(color.r * 255);
+            m_cover_art_pixels[i + 1] = static_cast<uint8_t>(color.g * 255);
+            m_cover_art_pixels[i + 2] = static_cast<uint8_t>(color.b * 255);
+            m_cover_art_pixels[i + 3] = 255;
+        }
+        m_palette->try_reset_palette();
+    }
+    void load_aux(const std::string &url) {
+        std::lock_guard guard(m_busy_mtx);
+
+        const auto res_data = Communication::load_cover_art(url);
+        int w, h, c = 0;
+        uint8_t *pixel_data = stbi_load_from_memory(reinterpret_cast<stbi_uc const *>(res_data.c_str()),
+                                                    static_cast<int>(res_data.size()), &w, &h, &c,
+                                                    STBI_rgb_alpha);
+        // NOTE: EVEN IF PIXEL DATA IS RGBA `c == STBI_rgb_alpha` IS NOT NECESSARILY TRUE?
+        // TODO: CHECK ACTUAL CHANNEL COUNT AND ADJUST FOR LOOP
+        const auto len = std::min(static_cast<int>(m_image_size), w * h * STBI_rgb_alpha);
+        memcpy(m_cover_art_pixels.data(), pixel_data, len);
+
+        stbi_image_free(pixel_data);
+
+        m_palette->generate_target(m_cover_art_pixels, m_image_size, true);
     }
 
     static void set_palette(const std::vector<uint8_t> &pixels, ColorPalette &palette, const float threshold = 0.15,
@@ -448,7 +495,9 @@ private:
 
 class Application : public InterFrame {
 public:
-    explicit Application(Visual* vis) : InterFrame(), m_vis(vis), m_amplitude(m_bar_count) {
+    explicit Application(Visual *vis) : InterFrame(), m_vis(vis), m_amplitude(m_bar_count)
+
+    {
         m_bone_displacement.resize(m_bar_count);
         m_image_count = vis->get_image_count();
         m_audio_record = new AudioRecord(32768);
@@ -462,11 +511,13 @@ public:
 
 
         m_audio_record->start_recognition();
-
-        m_cover_art.set_default(m_cover_art_pixels, m_palette);
+        m_palette = std::make_shared<StandardPalette>(4);
+        m_cover_art = new CoverArt(400 * 400 * STBI_rgb_alpha, m_palette);
+        m_cover_art->set_default(m_cover_art_pixels, glm::vec3(1.0f));
     }
     ~Application() override {
         delete m_audio_record;
+        delete m_cover_art;
     }
 
     void start_audio_recording() const {
@@ -487,12 +538,13 @@ public:
         sprite_load["back_drop"] = BACK_DROP_SPRITE;
         sprite_load["cover_art"] = COVER_ART_SPRITE;
         m_vis->load_sprites(sprite_load);
-        auto initial_bone_buffer = BoneBuffer {
+        const auto initial_bone_buffer = BoneBuffer {
             .bone = {
                 translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
                 translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f))
             }
         };
+        const glm::vec3 color(0.1f);
 
         for (int i = 0; i < m_bar_count; i++) {
             const auto sp = m_vis->get_sprite(BAR_NAMES[i]);
@@ -504,6 +556,7 @@ public:
             for (size_t j = 0; j < m_image_count; j++) {
                 sp->set_buffer(j, 1, &data, sizeof(SpriteModel));
                 sp->set_buffer(j, 2, &initial_bone_buffer, sizeof(BoneBuffer));
+                sp->set_buffer(j, 3, &color, sizeof(glm::vec3));
             }
         }
 
@@ -520,17 +573,6 @@ public:
                 sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
             }
         }
-        // const auto sp = m_vis->get_sprite("back_drop");
-        // auto model = SpriteModel {
-        //     .model_matrix = scale(translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 10.0f)), glm::vec3(30.0f, 20.0f, 20.0f))
-        // };
-        // auto bone = BoneBuffer {
-        //     .bone = {glm::mat4(1.0f), glm::mat4(1.0f)}
-        // };
-        // for (size_t j = 0; j < m_image_count; j++) {
-        //     sp->set_buffer(j, 1, &model, sizeof(SpriteModel));
-        //     sp->set_buffer(j, 2, &bone, sizeof(BoneBuffer));
-        // }
     }
 
     void inter_frame() override {
@@ -542,44 +584,44 @@ public:
             using namespace std;
             cout << "new url" << endl;
             if (image_url_opt.has_value()) {
-                m_cover_art.try_load(image_url_opt.value());
+                m_cover_art->try_load(image_url_opt.value());
             } else {
-                m_cover_art.try_reset(glm::vec3(1.0f));
+                m_cover_art->try_reset(glm::vec3(1.0f));
             }
         }
-        m_cover_art.try_approach(m_cover_art_pixels, m_palette);
+        m_cover_art->try_approach(m_cover_art_pixels);
         const auto cover_art = m_vis->get_sprite("cover_art");
         for (size_t j = 0; j < m_image_count; j++) {
-            cover_art->set_image(j, 1, m_cover_art_pixels.data(), m_cover_art.image_size());
+            cover_art->set_image(j, 1, m_cover_art_pixels.data(), m_cover_art->image_size());
         }
 
-        CornerColors corner_colors = {
-            glm::vec4(m_palette.main, 1.0),
-            glm::vec4(m_palette.second, 1.0),
-            glm::vec4(m_palette.third, 1.0),
-            glm::vec4(m_palette.light, 1.0),
-            glm::vec4(m_palette.dark, 1.0),
-        };
-        const auto sp = m_vis->get_sprite("back_drop");
-        for (size_t j = 0; j < m_image_count; j++) {
-            sp->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
+        auto palette_opt = m_palette->try_get_palette();
+        if (palette_opt.has_value()) {
+            auto palette = palette_opt.value();
+            CornerColors corner_colors = {
+                glm::vec4(palette.second, 1.0),
+                glm::vec4(palette.second, 1.0),
+                glm::vec4(palette.second, 1.0),
+                glm::vec4(palette.second, 1.0),
+                glm::vec4(palette.dark, 1.0),
+            };
+            const auto back_drop = m_vis->get_sprite("back_drop");
+            for (size_t j = 0; j < m_image_count; j++) {
+                back_drop->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
+            }
+
+            for (size_t i = 0; i < m_bar_count; i++) {
+                const auto sp = m_vis->get_sprite(BAR_NAMES[i]);
+
+                for (size_t j = 0; j < m_image_count; j++) {
+                    sp->set_buffer(j, 3, &palette.main, sizeof(glm::vec3));
+                }
+            }
+
         }
-        // auto pixels_opt = m_cover_art.try_get_cover_art_pixels();
-        // if (pixels_opt.has_value()) {
-        //     // TODO: COPIES VECTOR
-        //     auto pixels = pixels_opt.value();
-        //     const auto cover_art = m_vis->get_sprite("cover_art");
-        //     for (size_t j = 0; j < m_image_count; j++) {
-        //         cover_art->set_image(j, 1, pixels.data(), pixels.size());
-        //     }
-        // }
-        //
-        // auto palette_opt = m_cover_art.try_get_palette();
-        // if (palette_opt.has_value()) {}
-        // m_cover_art.tr();
 
         const size_t first_frequency = 30;
-        const size_t last_frequency = 4000;
+        const size_t last_frequency = 10000;
         const size_t frequency_count = last_frequency - first_frequency;
         const auto current_frequencies = m_audio_record->current_frequencies();
         const size_t bin_count = m_bar_count;
@@ -609,11 +651,7 @@ public:
         }
 
         for (size_t i = 0; i < m_bar_count; i++) {
-            // const auto amp = amps[i] / max_amp;
             m_amplitude[i] += 0.3f * (amps[i] - m_amplitude[i]);
-            // m_amplitude[i] = amps[i];
-            // using namespace std;
-            // cout << "i: " << i << " amp: " << amp << endl;
             auto bone_buffer = BoneBuffer {};
             bone_buffer.bone[0] = translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, m_amplitude[i]));
             bone_buffer.bone[1] = translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -m_amplitude[i]));
@@ -653,9 +691,9 @@ private:
     AudioRecord* m_audio_record;
     std::optional<std::string> m_last_cover_art = std::nullopt;
 
-    CoverArt m_cover_art = CoverArt(400 * 400 * STBI_rgb_alpha);
+    CoverArt* m_cover_art;
     std::vector<uint8_t> m_cover_art_pixels {};
-    ColorPalette m_palette {};
+    std::shared_ptr<StandardPalette> m_palette;
 
 
     size_t m_frame_rate = 60;

@@ -250,12 +250,7 @@ public:
         set_binding_buffer_size({sizeof(Camera::Data), sizeof(SpriteModel), sizeof(BoneBuffer)});
         set_binding_image_kind({Texture::TX_NULL});
         set_pipeline_kind(Pipeline::BAR);
-        set_descriptor_set_kind(Descriptor::CAMERA_MODEL_BUFFER);
-    }
-
-    [[nodiscard]] static std::optional<Pipeline::Kind> pipeline_kind() { return Pipeline::BAR; }
-    [[nodiscard]] static std::optional<Descriptor::Kind> descriptor_set_kind() {
-        return Descriptor::CAMERA_MODEL_BUFFER;
+        set_descriptor_set_kind(Descriptor::BAR);
     }
 
     void set_sprite_model(const SpriteModel& sprite_model, const size_t image_index) const {
@@ -267,29 +262,40 @@ public:
     }
 };
 
-class BarSprite : public CameraModelBufferSprite {
+class BarSprite : public Sprite {
 public:
     BarSprite(const std::shared_ptr<Device> &device, TextureManager &texture_manager,
               PipelineManager &pipeline_manager, UniformBufferManager &uniform_buffer_manager,
               const std::shared_ptr<VertexBuffer> &vertex_buffer, std::shared_ptr<DescriptorPool> &descriptor_pool,
-              const size_t image_count) : CameraModelBufferSprite(Model::BAR, pipeline_manager, vertex_buffer,
-                                                                  descriptor_pool, image_count)
+              const size_t image_count) : Sprite(Pipeline::BAR, Model::BAR, pipeline_manager, vertex_buffer,
+                                                 descriptor_pool, image_count)
     {
-        set_binding_image_kind({Texture::TX_NULL});
+
+        set_buffer_bindings({0, 1, 2, 3});
+        set_image_bindings({});
+        set_binding_buffer_kind({UniformBufferManager::CAMERA, UniformBufferManager::LOCAL,
+            UniformBufferManager::LOCAL, UniformBufferManager::LOCAL});
+        set_binding_buffer_size({sizeof(Camera::Data), sizeof(SpriteModel), sizeof(BoneBuffer), sizeof(glm::vec3)});
+        set_binding_image_kind({});
+
+        set_pipeline_kind(Pipeline::BAR);
+        set_descriptor_set_kind(Descriptor::BAR);
         set_model_kind(Model::BAR);
+
         set_descriptor_sets(device, texture_manager, uniform_buffer_manager, image_count);
+        //
     }
 
     [[nodiscard]] static std::optional<Model::Kind> model_kind() { return Model::BAR; }
     [[nodiscard]] static std::optional<Texture::Kind> texture_kind() { return Texture::TX_NULL; }
+    [[nodiscard]] static std::optional<Pipeline::Kind> pipeline_kind() { return Pipeline::BAR; }
+    [[nodiscard]] static std::optional<Descriptor::Kind> descriptor_set_kind() {
+        return Descriptor::BAR;
+    }
 };
 
 struct CornerColors {
     std::array<glm::vec4, 5> color;
-    // glm::vec3 bot_right;
-    // glm::vec3 top_left;
-    // glm::vec3 top_right;
-    // glm::vec3 front;
 };
 
 class BackDropSprite : public Sprite {

@@ -153,26 +153,16 @@ template<> struct std::hash<StandardVertex> {
 
 struct BarVertex {
     glm::vec3 pos;
-    glm::vec3 color;
     glm::vec3 normal;
     glm::int32 v_group = -1;
 
-    bool operator==(const BarVertex& other) const {
-        return pos == other.pos && color == other.color && normal == other.normal && v_group == other.v_group;
-    }
-
-    BarVertex(): pos(), color(), normal(), v_group() {}
-    explicit BarVertex(const ObjVertex &src): pos(src.get_pos()), color(src.get_color()), normal(src.get_normal())
+    BarVertex(): pos(), normal(), v_group() {}
+    explicit BarVertex(const ObjVertex &src): pos(src.get_pos()), normal(src.get_normal())
     {
         auto v_groups = src.get_vertex_groups();
         if (!v_groups.empty()) {
             v_group = static_cast<glm::int32>(v_groups[0]);
         }
-        // auto len = v_groups.size();
-        // if (1 > len) len = 1;
-        // for (size_t i = 0; i < len; i++) {
-        //     v_groups[i] = v_groups[i];
-        // }
     }
 
 
@@ -186,7 +176,7 @@ struct BarVertex {
     }
 
     static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
-        std::vector<VkVertexInputAttributeDescription> attribute_descriptions(4);
+        std::vector<VkVertexInputAttributeDescription> attribute_descriptions(3);
 
         attribute_descriptions[0].binding = 0;
         attribute_descriptions[0].location = 0;
@@ -196,28 +186,14 @@ struct BarVertex {
         attribute_descriptions[1].binding = 0;
         attribute_descriptions[1].location = 1;
         attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attribute_descriptions[1].offset = offsetof(BarVertex, color);
+        attribute_descriptions[1].offset = offsetof(BarVertex, normal);
 
         attribute_descriptions[2].binding = 0;
         attribute_descriptions[2].location = 2;
-        attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attribute_descriptions[2].offset = offsetof(BarVertex, normal);
-
-        attribute_descriptions[3].binding = 0;
-        attribute_descriptions[3].location = 3;
-        attribute_descriptions[3].format = VK_FORMAT_R32_SINT;
-        attribute_descriptions[3].offset = offsetof(BarVertex, v_group);
+        attribute_descriptions[2].format = VK_FORMAT_R32_SINT;
+        attribute_descriptions[2].offset = offsetof(BarVertex, v_group);
 
         return attribute_descriptions;
-    }
-};
-
-template<> struct std::hash<BarVertex> {
-    size_t operator()(BarVertex const& vertex) const noexcept {
-        return ((hash<glm::vec3>()(vertex.pos) ^
-            (hash<glm::vec3>()(vertex.color) << 1) >> 1) ^
-                (hash<glm::vec3>()(vertex.normal) << 1) >> 1) ^
-                    (hash<glm::int32>()(vertex.v_group) << 1);
     }
 };
 

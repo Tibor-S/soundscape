@@ -8,10 +8,12 @@ float i_a = 1.0;
 vec3 i_d = vec3(1.0, 1.0, 1.0);
 vec3 i_s = vec3(1.0, 1.0, 1.0);
 
-layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec3 fragNormal;
-layout(location = 2) in vec3 fragPos;
-layout(location = 3) in vec3 viewDir;
+layout(binding = 3) uniform BarColor {
+    vec3 color;
+} bc;
+
+layout(location = 0) in vec3 fragNormal;
+layout(location = 1) in vec3 viewDir;
 
 layout(location = 0) out vec4 outColor;
 
@@ -29,7 +31,7 @@ void main() {
     if (diff_strength <= 0) spec_color = vec3(0.0);
 
     vec3 light = i_a * k_a + diff_color * k_d + spec_color * k_s;
-    vec3 color = fragColor * light;
+    vec3 color = bc.color * light;
 
     outColor = vec4(color, 1.0);
 //    vec3 r = 2 * dot(sun, normal) * normal - sun;

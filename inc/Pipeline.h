@@ -153,7 +153,7 @@ public:
             case STANDARD:
                 return PipelineLayout::CAMERA_MODEL_SAMPLER;
             case BAR:
-                return PipelineLayout::CAMERA_MODEL_BUFFER;
+                return PipelineLayout::BAR;
             case BACK_DROP:
                 return PipelineLayout::BACK_DROP;
             case COVER_ART:

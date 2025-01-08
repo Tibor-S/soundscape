@@ -21,7 +21,7 @@ public:
 
     enum Kind {
         CAMERA_MODEL_SAMPLER,
-        CAMERA_MODEL_BUFFER,
+        BAR,
         BACK_DROP,
         COVER_ART
     };
@@ -52,7 +52,7 @@ public:
         switch (m_kind) {
             case CAMERA_MODEL_SAMPLER:
                 return StandardVertex::get_binding_description();
-            case CAMERA_MODEL_BUFFER:
+            case BAR:
                 return BarVertex::get_binding_description();
             case BACK_DROP:
                 return BackDropVertex::get_binding_description();
@@ -67,7 +67,7 @@ public:
         switch (m_kind) {
             case CAMERA_MODEL_SAMPLER:
                 return StandardVertex::get_attribute_descriptions();
-            case CAMERA_MODEL_BUFFER:
+            case BAR:
                 return BarVertex::get_attribute_descriptions();
             case BACK_DROP:
                 return BackDropVertex::get_attribute_descriptions();
@@ -92,12 +92,13 @@ private:
                     VK_SHADER_STAGE_FRAGMENT_BIT,
                 };
                 break;
-            case CAMERA_MODEL_BUFFER:
-                m_bindings = {CAMERA, MODEL, UNIFORM_BUFFER};
+            case BAR:
+                m_bindings = {CAMERA, MODEL, UNIFORM_BUFFER, UNIFORM_BUFFER};
                 m_shader_stages = {
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_VERTEX_BIT,
                     VK_SHADER_STAGE_VERTEX_BIT,
+                    VK_SHADER_STAGE_FRAGMENT_BIT
                 };
                 break;
             case BACK_DROP:

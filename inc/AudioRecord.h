@@ -31,7 +31,7 @@ struct RecordData {
 class AudioRecordCallback {
 public:
     explicit AudioRecordCallback(const size_t buffer_size) {
-        std::lock_guard<std::mutex> guard(m_mutex);
+        std::lock_guard guard(m_mutex);
 
         m_record_data = std::make_unique<RecordData>();
         const auto record_data = m_record_data;
@@ -209,6 +209,7 @@ public:
         m_input_parameters.hostApiSpecificStreamInfo = nullptr;
     }
     ~AudioRecord() {
+        stop_recording();
         stop_recognition();
         Pa_Terminate();
         if(m_err != paNoError)
