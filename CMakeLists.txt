@@ -60,6 +60,8 @@ set(SOURCE_FILES
         src/AudioRecord.cpp
         src/communication/content_download.cpp
         src/Model.cpp
+        src/CoverArt.cpp
+        src/Palette.cpp
 )
 
 set(HEADER_FILES
@@ -97,6 +99,8 @@ set(HEADER_FILES
         inc/Descriptor.h
         inc/AudioRecord.h
         inc/communication/content_download.h
+        inc/CoverArt.h
+        inc/Palette.h
 )
 
 # Add executable
