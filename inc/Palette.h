@@ -5,6 +5,7 @@
 #ifndef PALETTE_H
 #define PALETTE_H
 
+#include <iostream>
 #include <mutex>
 
 #define GLM_FORCE_RADIANS
@@ -162,22 +163,24 @@ private:
 
 class ColorGroupHue : public ColorGroupSaturation {
 public:
-    enum RADIANS_RANGE {
-        UNSIGNED ,
-        SIGNED
-    };
+    // enum RADIANS_RANGE {
+    //     UNSIGNED ,
+    //     SIGNED
+    // };
 
     ColorGroupHue() = default;
     explicit
-    ColorGroupHue(const float r, const float g, const float b, const RADIANS_RANGE range = UNSIGNED) :
+    ColorGroupHue(const float r, const float g, const float b) :
                   ColorGroupSaturation(r, g, b)
     {
-        m_range = range;
         m_hue = pick_hue(r, g, b, c_max(), delta());
     }
 
     [[nodiscard]] float hue() const {
         return m_hue;
+    }
+    [[nodiscard]] float hue_signed() const {
+        return m_hue <= M_PI ? m_hue : -2 * static_cast<float>(M_PI) + m_hue;
     }
 
     bool operator >(const ColorGroupHue& rhs) const {
@@ -187,8 +190,7 @@ public:
         return hue() < rhs.hue();
     }
 protected:
-    void to_rgb(float* r, float* g, float* b) {
-        adjust_hue(m_range, UNSIGNED);
+    void to_rgb(float* r, float* g, float* b) const {
         const float c = (1 - abs(2 * light() -1)) * saturation();
         const float x = c * (1 - abs(glm::mod(hue(), static_cast<float>(M_PI) / 3) - 1));
         switch (static_cast<size_t>(3.0f * hue() / M_PI) % 6) {
@@ -202,35 +204,20 @@ protected:
         }
         const float m = light() - c / 2;
         *r += m; *g += m; *b += m;
-        adjust_hue(UNSIGNED, m_range);
     }
-
     void set_hue(const float r, const float g, const float b) {
         set_saturation(r, g, b);
         m_hue = pick_hue(r, g, b, c_max(), delta());
     }
     void set_hue(const float radians) {
-        switch (m_range) {
-            case UNSIGNED:
-                m_hue = glm::mod(radians, 2 * static_cast<float>(M_PI));
-                break;
-            case SIGNED:
-                m_hue = glm::mod(radians - static_cast<float>(M_PI), 2 * static_cast<float>(M_PI)) -
-                        static_cast<float>(M_PI);
-                break;
-        }
+        m_hue = glm::mod(radians, 2 * static_cast<float>(M_PI));
     }
-    void set_range(const RADIANS_RANGE range) {
-        adjust_hue(m_range, range);
-        m_range = range;
-    }
-    void rotate_right(const float hue) {
-        set_hue(m_hue - hue);
+    void rotate_right(const float radians) {
+        set_hue(m_hue - radians);
     }
 
 private:
     float m_hue = 0; // radians
-    RADIANS_RANGE m_range = UNSIGNED;
 
     static size_t closest_channel(const float r, const float g, const float b, const float c_max) {
         glm::vec3 channels(r,g,b);
@@ -259,18 +246,6 @@ private:
         hue *= static_cast<float>(M_PI) / 3;
         return hue;
     }
-    void adjust_hue(const RADIANS_RANGE from_range, const RADIANS_RANGE to_range) {
-        if (from_range != to_range) {
-            switch (to_range) {
-                case UNSIGNED:
-                    m_hue += M_PI;
-                break;
-                case SIGNED:
-                    m_hue -= M_PI;
-                break;
-            }
-        }
-    }
 };
 
 class ColorGroup : public ColorGroupCount, public ColorGroupHue {
@@ -278,15 +253,13 @@ public:
     ColorGroup() = default;
     explicit ColorGroup(const glm::vec3 color) : ColorGroupCount(1), ColorGroupHue(color.r, color.g, color.b) {
         m_color = color;
+        std::cout << "org_col: " << m_color.x << " " << m_color.y << " " << m_color.z << std::endl;
     }
 
     [[nodiscard]] glm::vec3 get_color() const { return m_color; }
     void rotate_hue_right(const float hue) {
         rotate_right(hue);
         to_rgb(&m_color.r, &m_color.g, &m_color.b);
-    }
-    void change_hue_range(const RADIANS_RANGE range) {
-        set_range(range);
     }
     void append_color(const glm::vec3 color) {
         m_color = (static_cast<float>(count()) * m_color + color) / static_cast<float>(count() + 1);
@@ -304,13 +277,15 @@ private:
 
 class ColorCube : protected std::map<std::array<uint8_t, 3>, ColorGroup> {
 public:
+    typedef std::array<uint8_t, 3> key_t;
+
     ColorCube() = default;
     ColorCube(const std::vector<uint8_t> &pixels, uint8_t relevant_bits, bool alpha_channel);
     ~ColorCube() = default;
 
-    ColorGroup& voxel_ref(const std::array<uint8_t, 3> position) { return at(position); }
+    ColorGroup& voxel_ref(const key_t position) { return at(position); }
     template<class T>
-    std::optional<ColorGroup> voxel_by_highest_param() {
+    std::optional<ColorGroup> get_voxel_by_highest_param() {
         std::optional<ColorGroup> highest_grp = std::nullopt;
         for (auto &[_, grp] : *this) {
             if (!highest_grp.has_value()) {
@@ -321,6 +296,24 @@ public:
                 highest_grp = grp;
             }
         }
+        return highest_grp;
+    }
+    template<class T>
+    std::optional<ColorGroup> remove_voxel_by_highest_param() {
+        std::optional<ColorGroup> highest_grp = std::nullopt;
+        key_t highest_pos = {UINT8_MAX, UINT8_MAX, UINT8_MAX};
+        for (auto &[pos, grp] : *this) {
+            if (!highest_grp.has_value()) {
+                highest_grp = grp;
+                highest_pos = pos;
+                continue;
+            }
+            if (static_cast<T>(grp) > static_cast<T>(highest_grp.value())) {
+                highest_grp = grp;
+                highest_pos = pos;
+            }
+        }
+        remove_voxel(highest_pos);
         return highest_grp;
     }
     void remove_voxel(const std::array<uint8_t, 3> position) { erase(position); }

@@ -44,7 +44,7 @@ public:
 
 
         m_audio_record->start_recognition();
-        m_palette = std::make_shared<AnalogousPalette>(400, 3);
+        m_palette = std::make_shared<AnalogousPalette>(400, 5);
         m_cover_art = new CoverArt(400 * 400 * STBI_rgb_alpha, m_palette);
         m_cover_art->acquire_default(m_cover_art_pixels, glm::vec3(1.0f));
     }

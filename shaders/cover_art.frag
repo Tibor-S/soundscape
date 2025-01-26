@@ -2,8 +2,8 @@
 vec3 sun = normalize(vec3(0, 1.0, 1.0));
 //vec3 view = normalize(vec3(0.0, 1.0, 0.0));
 float k_a = 0.1;
-float k_d = 0.45;
-float k_s = 0.45;
+float k_d = 0.6;
+float k_s = 0.3;
 float i_a = 1.0;
 vec3 i_d = vec3(1.0, 1.0, 1.0);
 vec3 i_s = vec3(1.0, 1.0, 1.0);
@@ -19,6 +19,8 @@ layout(location = 4) in vec3 fragColor;
 layout(location = 0) out vec4 outColor;
 
 void main() {
+    vec4 tex_color = texture(texSampler, fragTexCoord);
+
     vec3 view = normalize(viewDir);
 
     vec3 normal = normalize(fragNormal);
@@ -32,9 +34,8 @@ void main() {
     if (diff_strength <= 0) spec_color = vec3(0.0);
 
     vec3 light = i_a * k_a + diff_color * k_d + spec_color * k_s;
-    vec4 color = texture(texSampler, fragTexCoord) * vec4(light, 1.0);
 
-    outColor = color;
+    outColor = tex_color * vec4(light, 1.0);
     //    vec3 r = 2 * dot(sun, normal) * normal - sun;
     //    outColor = vec4((k_a * i_a + k_d * max(0, dot(sun, normal)) * i_d) * fragColor, 1.0);
     //    outColor = vec4(fragColor * max(base_intensity, dot(sun, normalize(fragNormal))), 1.0);

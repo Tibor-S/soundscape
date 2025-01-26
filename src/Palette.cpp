@@ -2,6 +2,7 @@
 // Created by Sebastian Sandstig on 2025-01-08.
 //
 
+#include <iostream>
 #include <Palette.h>
 
 #include <map>
@@ -64,9 +65,9 @@ BgColorCube::BgColorCube(const std::vector<uint8_t> &pixels, uint8_t relevant_bi
             std::array voxel = {red_bin, green_bin, blue_bin};
 
             glm::vec3 color {};
-            color.r = static_cast<float>(red) / 255.0f;
-            color.g = static_cast<float>(green) / 255.0f;
-            color.b = static_cast<float>(blue) / 255.0f;
+            color.r = static_cast<float>(red) / 256.0f;
+            color.g = static_cast<float>(green) / 256.0f;
+            color.b = static_cast<float>(blue) / 256.0f;
 
             if (contains(voxel)) {
                 importance[voxel] *= static_cast<float>(at(voxel).count());
@@ -203,8 +204,10 @@ void AnalogousPalette::generate_target(const std::vector<uint8_t> &pixels, bool 
     auto pivot = color_cube.bg_voxel();
     m_target.main = pivot.get_color();
     color_cube.remove_bg_voxel();
+    std::cout << "fin_col: " << pivot.get_color().x << " " << pivot.get_color().y << " " << pivot.get_color().z << std::endl;
 
-    auto comp_opt = color_cube.voxel_by_highest_param<ColorGroupSaturation>();
+
+    auto comp_opt = color_cube.remove_voxel_by_highest_param<ColorGroupSaturation>();
     if(!comp_opt.has_value()) {
         ColorGroup left(pivot);
         ColorGroup right(pivot);
@@ -212,17 +215,42 @@ void AnalogousPalette::generate_target(const std::vector<uint8_t> &pixels, bool 
         right.rotate_hue_right(OPTIMAL_HUE_DIF);
         m_target.comp = left.get_color();
         m_target.comp_mirror = right.get_color();
-    } else {
-        auto comp = comp_opt.value();
-        comp.change_hue_range(ColorGroupHue::SIGNED);
-        comp.rotate_hue_right(pivot.hue()); // Hue relative to pivot
-        float hue_dif = comp.hue();
-        comp.rotate_hue_right(-pivot.hue()); // Rewind from previous alter
-        auto comp2 = ColorGroup(comp);
-        comp2.rotate_hue_right(2 * hue_dif);
 
-        m_target.comp = comp.get_color();
-        m_target.comp_mirror = comp2.get_color();
+        return;
     }
+
+    auto comp = comp_opt.value();
+    std::cout << "piv_hue: " << pivot.hue() << std::endl;
+    std::cout << "cmp_hue: " << comp.hue() << std::endl;
+    comp.rotate_hue_right(pivot.hue()); // Hue relative to pivot
+    std::cout << "rot_hue: " << comp.hue_signed() << std::endl;
+
+    auto next_comp_opt = color_cube.remove_voxel_by_highest_param<ColorGroupSaturation>();
+    while (glm::abs(comp.hue_signed()) < OPTIMAL_HUE_DIF && next_comp_opt.has_value()) {
+        auto next_comp = next_comp_opt.value();
+        std::cout << "rot_hue: " << next_comp.hue_signed() << std::endl;
+        next_comp.rotate_hue_right(pivot.hue()); // Hue relative to pivot
+        if (glm::abs(next_comp.hue_signed()) >= OPTIMAL_HUE_DIF) {
+            comp = next_comp;
+            break;
+        }
+
+        const float curr_dist = glm::distance(glm::abs(comp.hue_signed()), OPTIMAL_HUE_DIF);
+        const float next_dist = glm::distance(glm::abs(next_comp.hue_signed()), OPTIMAL_HUE_DIF);
+        if (next_dist < curr_dist) {
+            comp = next_comp;
+        }
+
+        next_comp_opt = color_cube.remove_voxel_by_highest_param<ColorGroupSaturation>();
+    }
+
+    auto hue_dif = comp.hue_signed();
+    std::cout << "fin_hue: " << comp.hue_signed() << std::endl;
+    comp.rotate_hue_right(-pivot.hue()); // Rewind from previous alter
+    auto comp2 = ColorGroup(comp);
+    comp2.rotate_hue_right(hue_dif);
+
+    m_target.comp = comp.get_color();
+    m_target.comp_mirror = comp2.get_color();
 
 }

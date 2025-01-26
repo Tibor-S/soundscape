@@ -67,29 +67,8 @@ vec4 GRN = vec4(0,1,0,1);
 vec4 BLU = vec4(0,0,1,1);
 
 void main() {
-
-//    vec2 uv = map_UV(fragPos, vec3(0.0), vec3(5.0,-1.0,3.0), vec3(-5.0,3.0,-1.35482));
-//    float fac = fbm(uv * 5);
-//
-//    float low = 0;
-//    vec4 low_color = palette.color[0];
-//    float high = 1;
-//    vec4 high_color = palette.color[3];
-//    if (fac <= palette.fac.x) {
-//        high = palette.fac.x;//palette.fac[0];
-//        high_color = palette.color[1];
-//    } else if (fac <= palette.fac.y) {
-//        low = palette.fac.x;//palette.fac[0];
-//        low_color = palette.color[1];
-//        high = palette.fac.y;//palette.fac[1];
-//        high_color = palette.color[2];
-//    } else {
-//        low = palette.fac.y;//palette.fac[1];
-//        low_color = palette.color[2];
-//    }
-//    float extended_fac = smoothstep(low, high, fac);
-//    vec4 color = mix(low_color, high_color, extended_fac);
     vec4 color = palette.color[0];
+
 
     vec3 view = normalize(viewDir);
 
@@ -106,8 +85,4 @@ void main() {
     vec3 light = i_a * k_a + diff_color * k_d + spec_color * k_s;
 
     outColor = color * vec4(light, 1.0);
-    //    outColor = vec4(fragNormal, 1.0);
-    //    vec3 r = 2 * dot(sun, normal) * normal - sun;
-    //    outColor = vec4((k_a * i_a + k_d * max(0, dot(sun, normal)) * i_d) * fragColor, 1.0);
-    //    outColor = vec4(fragColor * max(base_intensity, dot(sun, normalize(fragNormal))), 1.0);
 }
