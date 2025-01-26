@@ -44,9 +44,9 @@ public:
 
 
         m_audio_record->start_recognition();
-        m_palette = std::make_shared<StandardPalette>(4);
+        m_palette = std::make_shared<AnalogousPalette>(400, 3);
         m_cover_art = new CoverArt(400 * 400 * STBI_rgb_alpha, m_palette);
-        m_cover_art->set_default(m_cover_art_pixels, glm::vec3(1.0f));
+        m_cover_art->acquire_default(m_cover_art_pixels, glm::vec3(1.0f));
     }
     ~Application() override {
         delete m_audio_record;
@@ -127,13 +127,15 @@ public:
         auto palette_opt = m_palette->try_get_palette();
         if (palette_opt.has_value()) {
             auto palette = palette_opt.value();
-            CornerColors corner_colors = {
-                glm::vec4(palette.second, 1.0),
-                glm::vec4(palette.second, 1.0),
-                glm::vec4(palette.second, 1.0),
-                glm::vec4(palette.second, 1.0),
-                glm::vec4(palette.dark, 1.0),
+            CornerColors corner_colors = {};
+            corner_colors.color = {
+                glm::vec4(palette.main, 1.0),
+                glm::vec4(palette.main, 1.0),
+                glm::vec4(palette.main, 1.0),
+                glm::vec4(palette.main, 1.0),
             };
+            corner_colors.fac.x = 0.33f;
+            corner_colors.fac.y = 0.67f;
             const auto back_drop = m_vis->get_sprite("back_drop");
             for (size_t j = 0; j < m_image_count; j++) {
                 back_drop->set_buffer(j, 1, &corner_colors, sizeof(CornerColors));
@@ -141,9 +143,8 @@ public:
 
             for (size_t i = 0; i < m_bar_count; i++) {
                 const auto sp = m_vis->get_sprite(BAR_NAMES[i]);
-
                 for (size_t j = 0; j < m_image_count; j++) {
-                    sp->set_buffer(j, 3, &palette.main, sizeof(glm::vec3));
+                    sp->set_buffer(j, 3, &palette.comp, sizeof(glm::vec3));
                 }
             }
 
@@ -222,7 +223,7 @@ private:
 
     CoverArt* m_cover_art;
     std::vector<uint8_t> m_cover_art_pixels {};
-    std::shared_ptr<StandardPalette> m_palette;
+    std::shared_ptr<AnalogousPalette> m_palette;
 
 
     size_t m_frame_rate = 60;

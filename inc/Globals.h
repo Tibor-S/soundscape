@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 constexpr uint32_t WIDTH = 960;
 constexpr uint32_t HEIGHT = 540;
+constexpr float FLOAT_LIM = 0.00000001;
 
 const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"

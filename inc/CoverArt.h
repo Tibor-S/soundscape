@@ -18,9 +18,7 @@
 
 class CoverArt {
 public:
-    CoverArt(const size_t image_size, const std::shared_ptr<Palette> &palette) : m_cover_art_pixels(image_size),
-        m_palette(palette),
-        m_image_size(image_size) {}
+    CoverArt(const size_t image_size, const std::shared_ptr<Palette> &palette);
     ~CoverArt();
 
     [[nodiscard]] size_t image_size() const { return m_image_size; }
@@ -29,7 +27,8 @@ public:
     bool try_load(const std::string &url);
     // Make sure dst_pixels is allocated with at least the size of the image
     bool try_approach(std::vector<uint8_t> &dst_pixels, float factor = 0.1f);
-    void set_default(std::vector<uint8_t>& dst_pixels, glm::vec3 color) const;
+
+    void acquire_default(std::vector<uint8_t>& dst_pixels, glm::vec3 color);
 private:
     std::mutex m_busy_mtx;
     size_t m_image_size = 400 * 400 * STBI_rgb_alpha;
@@ -42,8 +41,6 @@ private:
 
     void reset_aux(glm::vec3 color);
     void load_aux(const std::string &url);
-    static void set_palette(const std::vector<uint8_t> &pixels, ColorPalette &palette, float threshold = 0.15,
-                            bool alpha_channel = true);
 };
 
 #endif //COVERART_H

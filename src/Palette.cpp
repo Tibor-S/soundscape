@@ -5,8 +5,89 @@
 #include <Palette.h>
 
 #include <map>
+#include <queue>
+#include <__ranges/elements_view.h>
 
-void StandardPalette::generate_target(const std::vector<uint8_t> &pixels, size_t pixel_size, bool alpha_channel) {
+ColorCube::ColorCube(const std::vector<uint8_t> &pixels, const uint8_t relevant_bits, const bool alpha_channel)
+{
+    const size_t offset = alpha_channel ? 4 : 3;
+
+    // Put in bins
+    for (size_t i = 0; i < pixels.size(); i += offset) {
+        const auto red = pixels[i+0];
+        const auto green = pixels[i+1];
+        const auto blue = pixels[i+2];
+
+        const uint8_t red_bin = red >> (8 - relevant_bits);
+        const uint8_t green_bin = green >> (8 - relevant_bits);
+        const uint8_t blue_bin = blue >> (8 - relevant_bits);
+
+        std::array voxel = {red_bin, green_bin, blue_bin};
+
+        glm::vec3 color {};
+        color.r = static_cast<float>(red) / 255.0f;
+        color.g = static_cast<float>(green) / 255.0f;
+        color.b = static_cast<float>(blue) / 255.0f;
+
+        if (contains(voxel)) {
+
+            at(voxel).append_color(color);
+        } else {
+            insert_or_assign(voxel, ColorGroup(color));
+        }
+    }
+}
+
+BgColorCube::BgColorCube(const std::vector<uint8_t> &pixels, uint8_t relevant_bits, size_t width, bool alpha_channel)
+{
+    const size_t offset = alpha_channel ? 4 : 3;
+    const size_t height = pixels.size() / (width * offset);
+    std::map<std::array<uint8_t, 3>, float> importance {};
+
+    // Put in bins
+    const float mid_x = static_cast<float>(width) / 2;
+    const float mid_y = static_cast<float>(height) / 2;
+    const float max_dist = mid_x + mid_y;
+    float highest_fac = 0.0f;
+    for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
+            const float fac = (abs(mid_x - static_cast<float>(x)) + abs(mid_y - static_cast<float>(y))) / max_dist;
+            const size_t i = offset * (y * width + x);
+            const auto red = pixels[i+0];
+            const auto green = pixels[i+1];
+            const auto blue = pixels[i+2];
+
+            const uint8_t red_bin = red >> (8 - relevant_bits);
+            const uint8_t green_bin = green >> (8 - relevant_bits);
+            const uint8_t blue_bin = blue >> (8 - relevant_bits);
+
+            std::array voxel = {red_bin, green_bin, blue_bin};
+
+            glm::vec3 color {};
+            color.r = static_cast<float>(red) / 255.0f;
+            color.g = static_cast<float>(green) / 255.0f;
+            color.b = static_cast<float>(blue) / 255.0f;
+
+            if (contains(voxel)) {
+                importance[voxel] *= static_cast<float>(at(voxel).count());
+                importance[voxel] += fac;
+                at(voxel).append_color(color);
+                importance[voxel] /= static_cast<float>(at(voxel).count());
+            } else {
+                insert_or_assign(voxel, ColorGroup(color));
+                importance[voxel] = fac;
+            }
+
+            if (importance[voxel] >= highest_fac) {
+                highest_fac = importance[voxel];
+                m_bg_most_important = voxel;
+            }
+        }
+    }
+}
+
+
+void StandardPalette::generate_target(const std::vector<uint8_t> &pixels, bool alpha_channel) {
     auto guard = lock();
     std::map<std::array<uint8_t, 3>, size_t> bin_count {};
     std::map<std::array<uint8_t, 3>, glm::vec3> avg_color {};
@@ -18,10 +99,8 @@ void StandardPalette::generate_target(const std::vector<uint8_t> &pixels, size_t
     size_t d_bin_count = 0;
     std::array<uint8_t, 3> l_bin = {0,0,0};
     size_t l_bin_count = 0;
-    std::array<uint8_t, 3> t_bin = {0,0,0};
-    size_t t_bin_count = 0;
-    std::array<uint8_t, 3> s_bin = {0,0,0};
-    size_t s_bin_count = 0;
+    std::array<uint8_t, 3> c_bin = {0,0,0};
+    size_t c_bin_count = 0;
     std::array<uint8_t, 3> m_bin = {0,0,0};
     size_t m_bin_count = 0;
     for (size_t i = 0; i < pixels.size(); i += offset) {
@@ -60,85 +139,90 @@ void StandardPalette::generate_target(const std::vector<uint8_t> &pixels, size_t
             bin_count[bin] = new_count;
             current_bin_count = new_count;
         }
-
-        if (is_dark && current_bin_count > d_bin_count) {
-            d_bin_count = current_bin_count;
-            d_bin = bin;
-        } else if (is_light && current_bin_count > l_bin_count) {
-            l_bin_count = current_bin_count;
-            l_bin = bin;
-        } else if (current_bin_count > m_bin_count) {
-            if (m_bin != bin) {
-                t_bin_count = s_bin_count;
-                t_bin = s_bin;
-                s_bin_count = m_bin_count;
-                s_bin = m_bin;
-                m_bin_count = current_bin_count;
-                m_bin = bin;
-            } else {
-                m_bin_count = current_bin_count;
-            }
-        } else if (current_bin_count > s_bin_count) {
-            if (s_bin != bin) {
-                t_bin_count = s_bin_count;
-                t_bin = s_bin;
-                s_bin_count = current_bin_count;
-                s_bin = bin;
-            } else {
-                s_bin_count = current_bin_count;
-            }
-        } else if (current_bin_count > t_bin_count) {
-            t_bin_count = current_bin_count;
-            t_bin = bin;
-        }
     }
-
-    // Make sure m and d have colors
-    if (d_bin_count == 0) d_bin = m_bin; // At least one of these must have a color
-    if (d_bin_count == 0) d_bin = l_bin; // At least one of these must have a color
-    if (m_bin_count == 0) m_bin = d_bin; // At least one of these must have a color
-
-    if (s_bin_count == 0) s_bin = m_bin;
-    if (t_bin_count == 0) t_bin = s_bin;
-    if (l_bin_count == 0) l_bin = t_bin;
 
     m_target.dark = avg_color[d_bin];
     m_target.light = avg_color[l_bin];
-    m_target.third = avg_color[t_bin];
-    m_target.second = avg_color[s_bin];
+    m_target.comp = avg_color[c_bin];
     m_target.main = avg_color[m_bin];
 }
 
-bool StandardPalette::try_approach_target(const float factor) {
-    if (!try_lock()) return false;
-    m_palette.dark = m_target.dark * factor + m_palette.dark * (1 - factor);
-    m_palette.light = m_target.light * factor + m_palette.light * (1 - factor);
-    m_palette.third = m_target.third * factor + m_palette.third * (1 - factor);
-    m_palette.second = m_target.second * factor + m_palette.second * (1 - factor);
-    m_palette.main = m_target.main * factor + m_palette.main * (1 - factor);
-    unlock();
-    return true;
+
+void SaturatedPalette::generate_target(const std::vector<uint8_t> &pixels, bool alpha_channel) {
+    auto guard = lock();
+    const size_t offset = alpha_channel ? 4 : 3;
+
+    ColorCube color_cube(pixels, m_relevant_bits, alpha_channel);
+
+    // Get most saturated
+    std::priority_queue<ColorGroup, std::vector<ColorGroup>, std::less<ColorGroupSaturation>> most_saturated {};
+    color_cube.clone_values(most_saturated);
+
+    // Default in case there are few bins
+    m_target.main = most_saturated.top().get_color();
+    m_target.comp = most_saturated.top().get_color();
+    m_target.dark = most_saturated.top().get_color();
+    m_target.main = most_saturated.top().get_color();
+
+    // Sort by lightness
+    auto darkest = ColorGroupLight(1);
+    auto lightest = ColorGroupLight(0);
+    auto main_saturation = ColorGroupSaturation(0);
+    auto comp_saturation = ColorGroupSaturation(0);
+    constexpr size_t count = sizeof(Palette4x) / sizeof(Palette4x::main);
+    for (size_t i = 0; i < count && !most_saturated.empty(); i++, most_saturated.pop()) {
+        const auto color_group = most_saturated.top();
+        const auto by_light = static_cast<ColorGroupLight>(color_group);
+        const auto by_saturation = static_cast<ColorGroupSaturation>(color_group);
+        if (by_light < darkest) {
+            darkest = by_light;
+            m_target.dark = color_group.get_color();
+        }
+        if (by_light > lightest) {
+            lightest = by_light;
+            m_target.light = color_group.get_color();
+        }
+        if (by_saturation > main_saturation) {
+            comp_saturation = main_saturation;
+            m_target.comp = m_target.main;
+            main_saturation = by_saturation;
+            m_target.main = color_group.get_color();
+        } else if (by_saturation > comp_saturation) {
+            comp_saturation = by_saturation;
+            m_target.comp = color_group.get_color();
+        }
+    }
 }
 
-[[nodiscard]] std::optional<ColorPalette> StandardPalette::try_get_palette() {
-    if (!try_lock()) return {};
-    auto palette = m_palette;
-    unlock();
-    return palette;
-}
+void AnalogousPalette::generate_target(const std::vector<uint8_t> &pixels, bool alpha_channel) {
+    auto guard = lock();
+    const size_t offset = alpha_channel ? 4 : 3;
 
-bool StandardPalette::try_set_palette(const ColorPalette& palette) {
-    if (!try_lock()) return false;
-    m_palette = palette;
-    m_target = palette;
-    unlock();
-    return true;
-}
+    BgColorCube color_cube(pixels, m_relevant_bits, m_image_width, alpha_channel);
 
-bool StandardPalette::try_reset_palette() {
-    if (!try_lock()) return false;
-    m_palette = DEFAULT;
-    m_target = DEFAULT;
-    unlock();
-    return true;
+    auto pivot = color_cube.bg_voxel();
+    m_target.main = pivot.get_color();
+    color_cube.remove_bg_voxel();
+
+    auto comp_opt = color_cube.voxel_by_highest_param<ColorGroupSaturation>();
+    if(!comp_opt.has_value()) {
+        ColorGroup left(pivot);
+        ColorGroup right(pivot);
+        left.rotate_hue_right(-OPTIMAL_HUE_DIF);
+        right.rotate_hue_right(OPTIMAL_HUE_DIF);
+        m_target.comp = left.get_color();
+        m_target.comp_mirror = right.get_color();
+    } else {
+        auto comp = comp_opt.value();
+        comp.change_hue_range(ColorGroupHue::SIGNED);
+        comp.rotate_hue_right(pivot.hue()); // Hue relative to pivot
+        float hue_dif = comp.hue();
+        comp.rotate_hue_right(-pivot.hue()); // Rewind from previous alter
+        auto comp2 = ColorGroup(comp);
+        comp2.rotate_hue_right(2 * hue_dif);
+
+        m_target.comp = comp.get_color();
+        m_target.comp_mirror = comp2.get_color();
+    }
+
 }

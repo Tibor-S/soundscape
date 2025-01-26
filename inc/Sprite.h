@@ -295,7 +295,8 @@ public:
 };
 
 struct CornerColors {
-    std::array<glm::vec4, 5> color;
+    std::array<glm::vec4, 4> color;
+    glm::vec2 fac;
 };
 
 class BackDropSprite : public Sprite {
